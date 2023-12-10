@@ -1,0 +1,183 @@
+---
+title: "Project1-Markdown"
+output: html_document
+date: "2023-12-08"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# NBA Salaries & Statistics data set - Clustering
+
+## Introduction
+
+::: {style="text-align: justify"}
+The NBA basketball leauge is famous for its players uniqe level of skill. Those players, who are good enough to play in the league are selected carefully by the scouts, with the statistics of their performance being constantly analysed.
+
+The goal of the project is to get as many valuable insights into the data set as possible with the clustering technique, which might help with assessing players on-court value. Although clustering, as a part of the unsupervised learning field, is used to identify the possible groups in the data in instances where labels for such groups are not provided, and in case of this data set there in fact is some form of labeling (court roles are assigned), the aim is to provide quite deeper analysis than simple assignment of the on-court position.
+
+I would like to conduct an analysis which might divide players into clusters based on their statistics inside and outside of the on-court role groups. I would also like to check if some players will fall out of the clusters and if so to also try to find an answer why.
+:::
+
+## Data set review
+
+```{r}
+data <- read.csv('nba_2022-23_all_stats_with_salary.csv')
+
+```
+
+```{r}
+data$Position = as.factor(data$Position)
+summary(data$Position)
+data[data$Position == 'PG-SG' | data$Position == 'SF-PF' | data$Position == 'SF-SG' | data$Position == 'SG-PG',]
+```
+
+There are 7 players that are assigned with a mix of a classically considered basketball court positions. In order to achieve coherent position labeling, I have decided to manually assign positions (PG, SG, SF, PF, C) to those players taking into consideration either their historical roles or their role in lineups for the season.
+
+```{r}
+data$Position = as.character(data$Position)
+
+# Kyrie Irving - PG
+data[data$Player.Name == 'Kyrie Irving',]['Position'] = 'PG'
+# Mikal Bridges
+data[data$Player.Name == 'Mikal Bridges',]['Position'] = 'SF'
+# Spencer Dinwiddie
+data[data$Player.Name == 'Spencer Dinwiddie',]['Position'] = 'PG'
+# Patrick Beverley
+data[data$Player.Name == 'Patrick Beverley',]['Position'] = 'PG'
+# Matisse Thybulle
+data[data$Player.Name == 'Matisse Thybulle',]['Position'] = 'SF'
+# George Hill
+data[data$Player.Name == 'George Hill',]['Position'] = 'PG'
+# Kevin Knox
+data[data$Player.Name == 'Kevin Knox',]['Position'] = 'SF'
+
+data$Position = as.factor(data$Position)
+summary(data$Position)
+```
+
+Next step is to select statistics, based on which the clustering will be conducted. Chosen stats quite well reflect players influence on the team performance. There is only one row which has 'NA' values, therefore it is removed from the data set - the player did not attempt any shots during his time on court. Furthermore during analysis of the data set it turned out, that Nikola Jokic, Finals MVP from season 2022-2023, is not included, so he was added manually, as player with such significant impact on the team would for sure stand as a good reference point.
+
+```{r}
+shorter_stats <- data[c('Player.Name', 'Position', 'MP', 'PTS', 'AST', 'STL', 'BLK', 'TRB', 'eFG.', 'TS.', 'USG.', 'WS.48','VORP')]
+
+shorter_stats[!complete.cases(shorter_stats),]
+
+shorter_stats = shorter_stats[complete.cases(shorter_stats),]
+
+nikola_jokic = c('Nikola Jokic', 'C', 33.7, 24.5, 9.8, 1.3, 0.7, 11.8, 0.66, 0.701, 27.2, 0.308, 8.8)
+
+shorter_stats <- rbind(shorter_stats, nikola_jokic)
+
+numeric_cols <- c('MP', 'PTS', 'AST', 'STL', 'BLK', 'TRB', 'eFG.', 'TS.', 'USG.', 'WS.48','VORP')
+
+shorter_stats[numeric_cols] <- lapply(shorter_stats[numeric_cols], as.numeric)
+
+columns_shortcut = c('Player.Name','MP', 'PTS', 'AST', 'STL', 'BLK', 'TRB', 'eFG.', 'TS.', 'USG.', 'WS.48','VORP')
+```
+
+The data is divided to 5 sub-groups based on the on-court role. Statistical summary of characteristics for each group may be found below.
+
+```{r}
+
+stats_PG = shorter_stats[shorter_stats$Position == 'PG', columns_shortcut]
+summary(stats_PG[,2:12])
+```
+
+```{r echo=TRUE}
+
+stats_SG = shorter_stats[shorter_stats$Position == 'SG', columns_shortcut]
+summary(stats_SG[,2:12])
+```
+
+```{r}
+stats_SF = shorter_stats[shorter_stats$Position == 'SF', columns_shortcut]
+summary(stats_SF[,2:12])
+```
+
+```{r}
+stats_PF = shorter_stats[shorter_stats$Position == 'PF', columns_shortcut]
+summary(stats_PF[,2:12])
+
+```
+
+```{r}
+stats_C = shorter_stats[shorter_stats$Position == 'C', columns_shortcut]
+summary(stats_C[,2:12])
+```
+
+Correlation matrices for statistics from each group of court roles show positive relations between the statistics, therefore, knowing that they are used to measure players impact on the field one can assume that chosen statistics would reflect players positive or negative contribution towards teams' performance.
+
+```{r}
+library(gridExtra)
+library(corrplot)
+
+corrplot(cor(stats_PG[,2:12], use="complete"), method="number", type="upper", diag=F, tl.col="black", tl.srt=45, tl.cex=0.9, number.cex=0.8, title="Stats PG", mar=c(0,0,2,0))
+
+corrplot(cor(stats_SG[,2:12], use="complete"), method="number", type="upper", diag=F, tl.col="black", tl.srt=45, tl.cex=0.9, number.cex=0.8, title="Stats SG", mar=c(0,0,2,0))
+
+corrplot(cor(stats_SF[,2:12], use="complete"), method="number", type="upper", diag=F, tl.col="black", tl.srt=45, tl.cex=0.9, number.cex=0.8, title="Stats SF", mar=c(0,0,2,0))
+
+corrplot(cor(stats_PF[,2:12], use="complete"), method="number", type="upper", diag=F, tl.col="black", tl.srt=45, tl.cex=0.9, number.cex=0.8, title="Stats PF", mar=c(0,0,2,0))
+
+corrplot(cor(stats_C[,2:12], use="complete"), method="number", type="upper", diag=F, tl.col="black", tl.srt=45, tl.cex=0.9, number.cex=0.8, title="Stats C", mar=c(0,0,2,0))
+```
+
+The data is then standardized with the z-score method.
+
+```{r}
+scaled_PG = as.data.frame(lapply(stats_PG[,2:12], scale))
+scaled_SG = as.data.frame(lapply(stats_SG[,2:12], scale))
+scaled_SF = as.data.frame(lapply(stats_SF[,2:12], scale))
+scaled_PF = as.data.frame(lapply(stats_PF[,2:12], scale))
+scaled_C = as.data.frame(lapply(stats_C[,2:12], scale))
+```
+
+## Clusterability
+
+The data clusterability is checked for each court-role. The Hopkins stat is either close to 0.7 or above for each group, therefore significant clusters exist.
+
+```{r}
+get_clust_tendency(scaled_PG, 2, graph=T)
+get_clust_tendency(scaled_SG, 2, graph=T)
+get_clust_tendency(scaled_SF, 2, graph=T)
+get_clust_tendency(scaled_PF, 2, graph=T)
+get_clust_tendency(scaled_C, 2, graph=T)
+```
+
+## Optimal number of clusters for each group
+
+```{r}
+fviz_nbclust(scaled_PG, FUNcluster = kmeans, method = 'silhouette') + theme_classic()
+
+fviz_nbclust(scaled_SG, FUNcluster = kmeans, method = 'silhouette') + theme_classic()
+
+fviz_nbclust(scaled_SF, FUNcluster = kmeans, method = 'silhouette') + theme_classic()
+
+fviz_nbclust(scaled_PF, FUNcluster = kmeans, method = 'silhouette') + theme_classic()
+
+fviz_nbclust(scaled_C, FUNcluster = kmeans, method = 'silhouette') + theme_classic()
+```
+
+```{r}
+PG_clust <- eclust(scaled_PG, FUNcluster = 'kmeans', k=2, graph=F)
+fviz_cluster(PG_clust, data = scaled_PG, elipse.type = 'convex')
+fviz_silhouette(PG_clust)
+
+SG_clust <- eclust(scaled_SG, FUNcluster = 'kmeans', k=2, graph=F)
+fviz_cluster(SG_clust, data = scaled_SG, elipse.type = 'convex')
+fviz_silhouette(SG_clust)
+
+SF_clust <- eclust(scaled_SF, FUNcluster = 'kmeans', k=2, graph=F)
+fviz_cluster(SF_clust, data = scaled_SF, elipse.type = 'convex')
+fviz_silhouette(SF_clust)
+
+PF_clust <- eclust(scaled_PF, FUNcluster = 'kmeans', k=2, graph=F)
+fviz_cluster(PF_clust, data = scaled_PF, elipse.type = 'convex')
+fviz_silhouette(PF_clust)
+
+C_clust <- eclust(scaled_C, FUNcluster = 'kmeans', k=2, graph=F)
+fviz_cluster(C_clust, data = scaled_C, elipse.type = 'convex')
+fviz_silhouette(C_clust)
+```
