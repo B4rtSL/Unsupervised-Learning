@@ -1,3 +1,3 @@
-# Uber drives project.
+# Extra project
 
-Extra Project for Unsupervised Learning class.
+Analysis of uber rides.
