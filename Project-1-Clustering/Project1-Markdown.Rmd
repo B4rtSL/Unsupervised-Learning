@@ -10,17 +10,17 @@ knitr::opts_chunk$set(echo = TRUE)
 
 # NBA Salaries & Statistics data set - Clustering
 
-## Introduction
+## Introduction.
 
 ::: {style="text-align: justify"}
-The NBA basketball leauge is famous for its players uniqe level of skill. Those players, who are good enough to play in the league are selected carefully by the scouts, with the statistics of their performance being constantly analysed.
+The NBA basketball league is famous for its players unique level of skill. Those players, who are good enough to play in the league are selected carefully by the scouts, with the statistics of their performance being constantly analysed.
 
 The goal of the project is to get as many valuable insights into the data set as possible with the clustering technique, which might help with assessing players on-court value. Although clustering, as a part of the unsupervised learning field, is used to identify the possible groups in the data in instances where labels for such groups are not provided, and in case of this data set there in fact is some form of labeling (court roles are assigned), the aim is to provide quite deeper analysis than simple assignment of the on-court position.
 
 I would like to conduct an analysis which might divide players into clusters based on their statistics inside and outside of the on-court role groups. I would also like to check if some players will fall out of the clusters and if so to also try to find an answer why.
 :::
 
-## Data set review
+## Data set review.
 
 ```{r}
 data <- read.csv('nba_2022-23_all_stats_with_salary.csv')
@@ -33,7 +33,9 @@ summary(data$Position)
 data[data$Position == 'PG-SG' | data$Position == 'SF-PF' | data$Position == 'SF-SG' | data$Position == 'SG-PG',]
 ```
 
+::: {style="text-align: justify"}
 There are 7 players that are assigned with a mix of a classically considered basketball court positions. In order to achieve coherent position labeling, I have decided to manually assign positions (PG, SG, SF, PF, C) to those players taking into consideration either their historical roles or their role in lineups for the season.
+:::
 
 ```{r}
 data$Position = as.character(data$Position)
@@ -57,7 +59,9 @@ data$Position = as.factor(data$Position)
 summary(data$Position)
 ```
 
-Next step is to select statistics, based on which the clustering will be conducted. Chosen stats quite well reflect players influence on the team performance. There is only one row which has 'NA' values, therefore it is removed from the data set - the player did not attempt any shots during his time on court. Furthermore during analysis of the data set it turned out, that Nikola Jokic, Finals MVP from season 2022-2023, is not included, so he was added manually, as player with such significant impact on the team would for sure stand as a good reference point.
+::: {style="text-align: justify"}
+Next step is to select statistics, based on which the clustering will be conducted. Chosen stats quite well reflect players influence on the team performance. There is only one row which has 'NA' values, therefore it is removed from the data set - the player did not attempt any shots during his time on court. Furthermore during analysis of the data set it turned out, that Nikola Jokic, Finals MVP from season 2022-2023, is not included, so he was added manually, as player with such significant impact on the team would for sure stand as a good reference point for further analysis.
+:::
 
 ```{r}
 shorter_stats <- data[c('Player.Name', 'Position', 'MP', 'PTS', 'AST', 'STL', 'BLK', 'TRB', 'eFG.', 'TS.', 'USG.', 'WS.48','VORP')]
@@ -77,7 +81,9 @@ shorter_stats[numeric_cols] <- lapply(shorter_stats[numeric_cols], as.numeric)
 columns_shortcut = c('Player.Name','MP', 'PTS', 'AST', 'STL', 'BLK', 'TRB', 'eFG.', 'TS.', 'USG.', 'WS.48','VORP')
 ```
 
+::: {style="text-align: justify"}
 The data is divided to 5 sub-groups based on the on-court role. Statistical summary of characteristics for each group may be found below.
+:::
 
 ```{r}
 
@@ -107,7 +113,9 @@ stats_C = shorter_stats[shorter_stats$Position == 'C', columns_shortcut]
 summary(stats_C[,2:12])
 ```
 
+::: {style="text-align: justify"}
 Correlation matrices for statistics from each group of court roles show positive relations between the statistics, therefore, knowing that they are used to measure players impact on the field one can assume that chosen statistics would reflect players positive or negative contribution towards teams' performance.
+:::
 
 ```{r}
 library(gridExtra)
@@ -134,11 +142,16 @@ scaled_PF = as.data.frame(lapply(stats_PF[,2:12], scale))
 scaled_C = as.data.frame(lapply(stats_C[,2:12], scale))
 ```
 
-## Clusterability
+## Clustering tendency.
 
-The data clusterability is checked for each court-role. The Hopkins stat is either close to 0.7 or above for each group, therefore significant clusters exist.
+::: {style="text-align: justify"}
+The data clustering tendency is checked for each court-role. The Hopkins stat is either close to 0.7 or above for each group, therefore significant clusters exist.
+:::
 
 ```{r}
+library(factoextra)
+library(cluster)
+
 get_clust_tendency(scaled_PG, 2, graph=T)
 get_clust_tendency(scaled_SG, 2, graph=T)
 get_clust_tendency(scaled_SF, 2, graph=T)
@@ -146,38 +159,200 @@ get_clust_tendency(scaled_PF, 2, graph=T)
 get_clust_tendency(scaled_C, 2, graph=T)
 ```
 
-## Optimal number of clusters for each group
+## Partitional clustering.
+
+### Optimal number of clusters for each group based on court role.
+
+::: {style="text-align: justify"}
+Knowing that the data could be significantly clustered we continue the analysis with checking how well the data could be clustered with the k-means and PAM clustering methods and what is more important for how many clusters it would work the best.
+:::
 
 ```{r}
-fviz_nbclust(scaled_PG, FUNcluster = kmeans, method = 'silhouette') + theme_classic()
+PG_viz_kmeans = fviz_nbclust(scaled_PG, FUNcluster = kmeans, method = 'silhouette') + theme_classic() + ggtitle('Kmeans PG')
 
-fviz_nbclust(scaled_SG, FUNcluster = kmeans, method = 'silhouette') + theme_classic()
+SG_viz_kmeans = fviz_nbclust(scaled_SG, FUNcluster = kmeans, method = 'silhouette') + theme_classic() + ggtitle('Kmeans SG')
 
-fviz_nbclust(scaled_SF, FUNcluster = kmeans, method = 'silhouette') + theme_classic()
+SF_viz_kmeans = fviz_nbclust(scaled_SF, FUNcluster = kmeans, method = 'silhouette') + theme_classic() + ggtitle('Kmeans SF')
 
-fviz_nbclust(scaled_PF, FUNcluster = kmeans, method = 'silhouette') + theme_classic()
+PF_viz_kmeans = fviz_nbclust(scaled_PF, FUNcluster = kmeans, method = 'silhouette') + theme_classic() + ggtitle('Kmeans PF')
 
-fviz_nbclust(scaled_C, FUNcluster = kmeans, method = 'silhouette') + theme_classic()
+C_viz_kmeans = fviz_nbclust(scaled_C, FUNcluster = kmeans, method = 'silhouette') + theme_classic() + ggtitle('Kmeans C')
 ```
+
+```{r}
+PG_viz_pam = fviz_nbclust(scaled_PG, FUNcluster = cluster::pam, method = 'silhouette') + theme_classic() + ggtitle('PAM PG')
+
+SG_viz_pam = fviz_nbclust(scaled_SG, FUNcluster = cluster::pam, method = 'silhouette') + theme_classic() + ggtitle('PAM SG')
+
+SF_viz_pam = fviz_nbclust(scaled_SF, FUNcluster = cluster::pam, method = 'silhouette') + theme_classic() + ggtitle('PAM SF')
+
+PF_viz_pam = fviz_nbclust(scaled_PF, FUNcluster = cluster::pam, method = 'silhouette') + theme_classic() + ggtitle('PAM PF')
+
+C_viz_pam = fviz_nbclust(scaled_C, FUNcluster = cluster::pam, method = 'silhouette') + theme_classic() + ggtitle('PAM C')
+```
+
+```{r}
+library(gridExtra)
+
+grid.arrange(PG_viz_kmeans, PG_viz_pam, ncol=2)
+grid.arrange(SG_viz_kmeans, SG_viz_pam, ncol=2)
+grid.arrange(SF_viz_kmeans, SF_viz_pam, ncol=2)
+grid.arrange(PF_viz_kmeans, PF_viz_pam, ncol=2)
+grid.arrange(C_viz_kmeans, C_viz_pam, ncol=2)
+```
+
+::: {style="text-align: justify"}
+The results are consistent in terms of number of clusters - the best silhouette values are returned when 2 clusters are selected.
+:::
+
+### K-means clustering.
 
 ```{r}
 PG_clust <- eclust(scaled_PG, FUNcluster = 'kmeans', k=2, graph=F)
-fviz_cluster(PG_clust, data = scaled_PG, elipse.type = 'convex')
-fviz_silhouette(PG_clust)
 
 SG_clust <- eclust(scaled_SG, FUNcluster = 'kmeans', k=2, graph=F)
-fviz_cluster(SG_clust, data = scaled_SG, elipse.type = 'convex')
-fviz_silhouette(SG_clust)
 
 SF_clust <- eclust(scaled_SF, FUNcluster = 'kmeans', k=2, graph=F)
-fviz_cluster(SF_clust, data = scaled_SF, elipse.type = 'convex')
-fviz_silhouette(SF_clust)
 
 PF_clust <- eclust(scaled_PF, FUNcluster = 'kmeans', k=2, graph=F)
-fviz_cluster(PF_clust, data = scaled_PF, elipse.type = 'convex')
-fviz_silhouette(PF_clust)
 
 C_clust <- eclust(scaled_C, FUNcluster = 'kmeans', k=2, graph=F)
-fviz_cluster(C_clust, data = scaled_C, elipse.type = 'convex')
-fviz_silhouette(C_clust)
 ```
+
+```{r}
+grid.arrange(
+  fviz_cluster(PG_clust, 
+               data = scaled_PG, 
+               elipse.type = 'convex', 
+               main='Kmeans PG'),
+  fviz_silhouette(PG_clust),
+  ncol=2)
+
+grid.arrange(
+  fviz_cluster(SG_clust, 
+               data = scaled_SG, 
+               elipse.type = 'convex', 
+               main='Kmeans SG'),
+  fviz_silhouette(SG_clust),
+  ncol=2)
+
+grid.arrange(
+  fviz_cluster(SF_clust, 
+               data = scaled_SF, 
+               elipse.type = 'convex', 
+               main='Kmeans SF'),
+  fviz_silhouette(SF_clust),
+  ncol=2)
+
+grid.arrange(
+  fviz_cluster(PF_clust, 
+               data = scaled_PF, 
+               elipse.type = 'convex', 
+               main='Kmeans PF'),
+  fviz_silhouette(PF_clust),
+  ncol=2)
+
+grid.arrange(
+  fviz_cluster(C_clust, 
+               data = scaled_C, 
+               elipse.type = 'convex', 
+               main='Kmeans C'),
+  fviz_silhouette(C_clust),
+  ncol=2)
+```
+
+### PAM clustering.
+
+```{r}
+PG_clust_pam <- eclust(scaled_PG, FUNcluster = 'pam', k=2, graph=F)
+
+SG_clust_pam <- eclust(scaled_SG, FUNcluster = 'pam', k=2, graph=F)
+
+SF_clust_pam <- eclust(scaled_SF, FUNcluster = 'pam', k=2, graph=F)
+
+PF_clust_pam <- eclust(scaled_PF, FUNcluster = 'pam', k=2, graph=F)
+
+C_clust_pam <- eclust(scaled_C, FUNcluster = 'pam', k=2, graph=F)
+```
+
+```{r}
+grid.arrange(
+  fviz_cluster(PG_clust_pam, 
+               data = scaled_PG, 
+               elipse.type = 'convex', 
+               main='PAM PG'),
+  fviz_silhouette(PG_clust_pam),
+  ncol=2)
+
+grid.arrange(
+  fviz_cluster(SG_clust_pam, 
+               data = scaled_SG, 
+               elipse.type = 'convex', 
+               main='PAM SG'),
+  fviz_silhouette(SG_clust_pam),
+  ncol=2)
+
+grid.arrange(
+  fviz_cluster(SF_clust_pam, 
+               data = scaled_SF, 
+               elipse.type = 'convex', 
+               main='PAM SF'),
+  fviz_silhouette(SF_clust_pam),
+  ncol=2)
+
+grid.arrange(
+  fviz_cluster(PF_clust_pam, 
+               data = scaled_PF, 
+               elipse.type = 'convex', 
+               main='PAM PF'),
+  fviz_silhouette(PF_clust_pam),
+  ncol=2)
+
+grid.arrange(
+  fviz_cluster(C_clust_pam, 
+               data = scaled_C, 
+               elipse.type = 'convex', 
+               main='PAM C'),
+  fviz_silhouette(C_clust_pam),
+  ncol=2)
+```
+
+### Which method is better for further analysis?
+
+::: {style="text-align: justify"}
+To further interpret the dependencies and relationships within the clusters one method should be chosen. In order to decide whether K-means or PAM clustering works better in this case, the weighted average will be calculated, treating the number of players in each group, based on their court role (number of observations), as weights for the average silhouette value within such group.
+:::
+
+```{r}
+kmeans_sils = c(PG_clust$silinfo$avg.width, SG_clust$silinfo$avg.width, SF_clust$silinfo$avg.width, PF_clust$silinfo$avg.width, C_clust$silinfo$avg.width)
+
+kmeans_weigths = c(length(stats_PG[,1]), length(stats_SG[,1]),length(stats_SF[,1]), length(stats_PF[,1]), length(stats_C[,1]))
+
+weighted.mean(kmeans_sils, kmeans_weigths)
+
+pam_sils = c(PG_clust_pam$silinfo$avg.width, SG_clust_pam$silinfo$avg.width, SF_clust_pam$silinfo$avg.width, PF_clust_pam$silinfo$avg.width, C_clust_pam$silinfo$avg.width)
+
+pam_weigths = c(length(stats_PG[,1]), length(stats_SG[,1]),length(stats_SF[,1]), length(stats_PF[,1]), length(stats_C[,1]))
+
+weighted.mean(pam_sils, pam_weigths)
+```
+
+::: {style="text-align: justify"}
+Average width for the whole data set based on court role is higher for the PAM clustering method.
+:::
+
+## Hierarchical clustering.
+
+```{r}
+PG_viz_hcut = fviz_nbclust(scaled_PG, FUNcluster = hcut, method = 'silhouette') + theme_classic() + ggtitle('Hierarchical PG')
+
+SG_viz_hcut = fviz_nbclust(scaled_SG, FUNcluster = hcut, method = 'silhouette') + theme_classic() + ggtitle('Hierarchical SG')
+
+SF_viz_hcut = fviz_nbclust(scaled_SF, FUNcluster = hcut, method = 'silhouette') + theme_classic() + ggtitle('Hierarchical SF')
+
+PF_viz_hcut = fviz_nbclust(scaled_PF, FUNcluster = hcut, method = 'silhouette') + theme_classic() + ggtitle('Hierarchical PF')
+
+C_viz_hcut = fviz_nbclust(scaled_C, FUNcluster = hcut, method = 'silhouette') + theme_classic() + ggtitle('Hierarchical C')
+```
+
+## Data analysis within clusters.
