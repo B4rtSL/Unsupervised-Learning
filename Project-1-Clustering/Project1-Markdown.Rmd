@@ -15,12 +15,24 @@ knitr::opts_chunk$set(echo = TRUE)
 ::: {style="text-align: justify"}
 The NBA basketball league is famous for its players unique level of skill. Those players, who are good enough to play in the league are selected carefully by the scouts, with the statistics of their performance being constantly analysed.
 
-The goal of the project is to get as many valuable insights into the data set as possible with the clustering technique, which might help with assessing players on-court value. Although clustering, as a part of the unsupervised learning field, is used to identify the possible groups in the data in instances where labels for such groups are not provided, and in case of this data set there in fact is some form of labeling (court roles are assigned), the aim is to provide quite deeper analysis than simple assignment of the on-court position.
+The goal of the project is to get as many valuable insights into the data set as possible with the clustering technique, which might help with assessing players on-court value. Although clustering, as a part of the unsupervised learning field, is used to identify the possible groups in the data in instances where labels for such groups are not provided, and in case of this data set there in fact is some form of labeling (court roles are assigned), the aim is to provide the information based on the value which players bring to the court rather than simple assignment of the on-court position.
 
-I would like to conduct an analysis which might divide players into clusters based on their statistics inside and outside of the on-court role groups. I would also like to check if some players will fall out of the clusters and if so to also try to find an answer why.
+I would like to conduct an analysis which might divide players into clusters based on their statistics inside of the on-court role groups. I would also like to check if some players will fall out of the clusters and if so to also try to find an answer why.
 :::
 
-## Data set review.
+## Review of existing solutions.
+
+::: {style="text-align: justify"}
+While doing the research of currently existing solutions for this project I came across some interesting analyses, but they are mostly focused on obtaining hidden skills and tendencies of players.
+
+For example, the author of "Generating NBA Archetypes Using K-Means Clustering" article (<https://bestballstats.com/2022/07/23/generating-nba-archetypes-using-k-means-clustering/>) is separating the defensive and offensive roles on the court and assigning the archetypes in each of those categories with no regards to the classical on-court positioning, focusing only on the statistics which define the tendencies on the court. The archetypes themselves are created based on k-means clustering by the chosen statistics and named after analysis of the clusters contents. Such approach might be helpful when trying to find a player with a certain play-style on the given side of the court.
+
+In another interesting article (<https://towardsdatascience.com/redefining-nba-player-classifications-using-clustering-36a348fa54a8>) the author uses the PCA dimension reduction technique to gather information about the players from the wide range of the statistics. After the reduction, author describes "ingredients" that contribute the most to creation of every Principal Components and which on court tendencies each PC reflects. On top of that hierarchical clustering is conducted, grouping the players based on their profiles, which are developed based on the PC "ingredients".
+
+Taking into consideration the focus of above analyses on players tendencies and on-court role archetypes I believe that there exists some space for conducting the analysis focusing on the on-court impact itself and that combining the results of archetype-focused analysis with impact-focused analysis might bring valuable insights into teams rosters.
+:::
+
+## Data set review and preparation.
 
 ```{r}
 data <- read.csv('nba_2022-23_all_stats_with_salary.csv')
@@ -145,7 +157,7 @@ scaled_C = as.data.frame(lapply(stats_C[,2:12], scale))
 ## Clustering tendency.
 
 ::: {style="text-align: justify"}
-The data clustering tendency is checked for each court-role. The Hopkins stat is either close to 0.7 or above for each group, therefore significant clusters exist.
+The data clustering tendency is checked for each court-role. The Hopkins stat is either close to 0.7 or above for each group, therefore significant clusters might exist.
 :::
 
 ```{r}
@@ -165,6 +177,10 @@ get_clust_tendency(scaled_C, 2, graph=T)
 
 ::: {style="text-align: justify"}
 Knowing that the data could be significantly clustered we continue the analysis with checking how well the data could be clustered with the k-means and PAM clustering methods and what is more important for how many clusters it would work the best.
+
+The key difference between these two methods is that k-means is based on idea of centroids, while PAM is based on the idea of medoids.
+
+The CLARA method has no use in this case, as the data set is relatively small - PAM algorithm should be good enough (as they both work based on medoids concept).
 :::
 
 ```{r}
@@ -343,16 +359,24 @@ Average width for the whole data set based on court role is higher for the PAM c
 
 ## Hierarchical clustering.
 
+We consider two types of hierarchical clustering, divisive (top-down) and agglomerative (bottom-up). The divisive approach means that division starts from each point being in the same cluster, divising them then in pairs into smaller ones, with the agglomerative approach being the opposite of the aforementioned.
+
 ```{r}
-PG_viz_hcut = fviz_nbclust(scaled_PG, FUNcluster = hcut, method = 'silhouette') + theme_classic() + ggtitle('Hierarchical PG')
+fviz_nbclust(scaled_PG, FUNcluster = hcut, method = 'silhouette') + theme_classic() + ggtitle('Hierarchical PG')
 
-SG_viz_hcut = fviz_nbclust(scaled_SG, FUNcluster = hcut, method = 'silhouette') + theme_classic() + ggtitle('Hierarchical SG')
+fviz_nbclust(scaled_SG, FUNcluster = hcut, method = 'silhouette') + theme_classic() + ggtitle('Hierarchical SG')
 
-SF_viz_hcut = fviz_nbclust(scaled_SF, FUNcluster = hcut, method = 'silhouette') + theme_classic() + ggtitle('Hierarchical SF')
+fviz_nbclust(scaled_SF, FUNcluster = hcut, method = 'silhouette') + theme_classic() + ggtitle('Hierarchical SF')
 
-PF_viz_hcut = fviz_nbclust(scaled_PF, FUNcluster = hcut, method = 'silhouette') + theme_classic() + ggtitle('Hierarchical PF')
+fviz_nbclust(scaled_PF, FUNcluster = hcut, method = 'silhouette') + theme_classic() + ggtitle('Hierarchical PF')
 
-C_viz_hcut = fviz_nbclust(scaled_C, FUNcluster = hcut, method = 'silhouette') + theme_classic() + ggtitle('Hierarchical C')
+fviz_nbclust(scaled_C, FUNcluster = hcut, method = 'silhouette') + theme_classic() + ggtitle('Hierarchical C')
+```
+
+For each on-court position, as in the partition clustering, the best number of clusters is 2. The analysis with the both top-down and bottom-up approach will be conducted, taking various linkage types into consideration. The best method will be selected based on the silhouette width, as in the case of partition clustering and the values will be compared to select the result, on which the final analysis of clusters contents will be conducted.
+
+```{r}
+
 ```
 
 ## Data analysis within clusters.
