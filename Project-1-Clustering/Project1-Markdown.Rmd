@@ -148,10 +148,19 @@ The data is then standardized with the z-score method.
 
 ```{r}
 scaled_PG = as.data.frame(lapply(stats_PG[,2:12], scale))
+rownames(scaled_PG) = stats_PG$Player.Name
+
 scaled_SG = as.data.frame(lapply(stats_SG[,2:12], scale))
+rownames(scaled_SG) = stats_SG$Player.Name
+
 scaled_SF = as.data.frame(lapply(stats_SF[,2:12], scale))
+rownames(scaled_SF) = stats_SF$Player.Name
+
 scaled_PF = as.data.frame(lapply(stats_PF[,2:12], scale))
+rownames(scaled_PF) = stats_PF$Player.Name
+
 scaled_C = as.data.frame(lapply(stats_C[,2:12], scale))
+rownames(scaled_C) = stats_C$Player.Name
 ```
 
 ## Clustering tendency.
@@ -359,7 +368,9 @@ Average width for the whole data set based on court role is higher for the PAM c
 
 ## Hierarchical clustering.
 
-We consider two types of hierarchical clustering, divisive (top-down) and agglomerative (bottom-up). The divisive approach means that division starts from each point being in the same cluster, divising them then in pairs into smaller ones, with the agglomerative approach being the opposite of the aforementioned.
+### Optimal number of clusters.
+
+We consider two types of hierarchical clustering, divisive (top-down) and agglomerative (bottom-up). The divisive approach means that division starts from each point being in the same cluster, dividing them then into smaller pairs, with the agglomerative approach being the opposite of the aforementioned.
 
 ```{r}
 fviz_nbclust(scaled_PG, FUNcluster = hcut, method = 'silhouette') + theme_classic() + ggtitle('Hierarchical PG')
@@ -375,8 +386,109 @@ fviz_nbclust(scaled_C, FUNcluster = hcut, method = 'silhouette') + theme_classic
 
 For each on-court position, as in the partition clustering, the best number of clusters is 2. The analysis with the both top-down and bottom-up approach will be conducted, taking various linkage types into consideration. The best method will be selected based on the silhouette width, as in the case of partition clustering and the values will be compared to select the result, on which the final analysis of clusters contents will be conducted.
 
-```{r}
+### Divisive clustering - DIANA.
 
+```{r}
+library(fpc)
+PG_clust_diana <- eclust(scaled_PG, k=2, FUNcluster = 'diana')
+pltree(PG_clust_diana, hang = -1, main = "PG Dendrogram - DIANA", cex = 0.47)
+rect.hclust(PG_clust_diana, k=2, border='red')
+
+diana_stats_PG <- cluster.stats(dist(scaled_PG), PG_clust_diana$cluster)
+diana_stats_PG$avg.silwidth
+diana_stats_PG$cluster.size
+```
+
+```{r}
+SG_clust_diana <- eclust(scaled_SG, k=2, FUNcluster = 'diana')
+pltree(SG_clust_diana, hang = -1, main = "SG Dendrogram - DIANA", cex = 0.47)
+rect.hclust(SG_clust_diana, k=2, border='red')
+
+diana_stats_SG <- cluster.stats(dist(scaled_SG), SG_clust_diana$cluster)
+diana_stats_SG$avg.silwidth
+diana_stats_SG$cluster.size
+```
+
+```{r}
+SF_clust_diana <- eclust(scaled_SF, k=2, FUNcluster = 'diana')
+pltree(SF_clust_diana, hang = -1, main = "SF Dendrogram - DIANA", cex = 0.47)
+rect.hclust(SF_clust_diana, k=2, border='red')
+
+diana_stats_SF <- cluster.stats(dist(scaled_SF), SF_clust_diana$cluster)
+diana_stats_SF$avg.silwidth
+diana_stats_SF$cluster.size
+```
+
+```{r}
+PF_clust_diana <- eclust(scaled_PF, k=2, FUNcluster = 'diana')
+pltree(PF_clust_diana, hang = -1, main = "PF Dendrogram - DIANA", cex = 0.47)
+rect.hclust(PF_clust_diana, k=2, border='red')
+
+diana_stats_PF <- cluster.stats(dist(scaled_PF), PF_clust_diana$cluster)
+diana_stats_PF$avg.silwidth
+diana_stats_PF$cluster.size
+```
+
+```{r}
+C_clust_diana <- eclust(scaled_C, k=2, FUNcluster = 'diana')
+pltree(C_clust_diana, hang = -1, main = "C Dendrogram - DIANA", cex = 0.47)
+rect.hclust(C_clust_diana, k=2, border='red')
+
+diana_stats_C <- cluster.stats(dist(scaled_C), C_clust_diana$cluster)
+diana_stats_C$avg.silwidth
+diana_stats_C$cluster.size
+```
+
+### Agglomerative clustering - AGNES.
+
+```{r}
+PG_clust_agnes <- eclust(scaled_PG, k=2, FUNcluster = 'agnes', hc_method = 'ward.D2')
+pltree(PG_clust_agnes, hang = -1, main = "PG Dendrogram - AGNES", cex = 0.47)
+rect.hclust(PG_clust_agnes, k=2, border='red')
+
+agnes_stats_PG <- cluster.stats(dist(scaled_PG), PG_clust_agnes$cluster)
+agnes_stats_PG$avg.silwidth
+agnes_stats_PG$cluster.size
+```
+
+```{r}
+SG_clust_agnes <- eclust(scaled_SG, k=2, FUNcluster = 'agnes', hc_method = 'ward.D2')
+pltree(SG_clust_agnes, hang = -1, main = "SG Dendrogram - AGNES", cex = 0.47)
+rect.hclust(SG_clust_agnes, k=2, border='red')
+
+agnes_stats_SG <- cluster.stats(dist(scaled_SG), SG_clust_agnes$cluster)
+agnes_stats_SG$avg.silwidth
+agnes_stats_SG$cluster.size
+```
+
+```{r}
+SF_clust_agnes <- eclust(scaled_SF, k=2, FUNcluster = 'agnes', hc_method = 'ward.D2')
+pltree(SF_clust_agnes, hang = -1, main = "SF Dendrogram - AGNES", cex = 0.47)
+rect.hclust(SF_clust_agnes, k=2, border='red')
+
+agnes_stats_SF <- cluster.stats(dist(scaled_SF), SF_clust_agnes$cluster)
+agnes_stats_SF$avg.silwidth
+agnes_stats_SF$cluster.size
+```
+
+```{r}
+PF_clust_agnes <- eclust(scaled_PF, k=2, FUNcluster = 'agnes', hc_method = 'ward.D2')
+pltree(PF_clust_agnes, hang = -1, main = "PF Dendrogram - AGNES", cex = 0.47)
+rect.hclust(PF_clust_agnes, k=2, border='red')
+
+agnes_stats_PF <- cluster.stats(dist(scaled_PF), PF_clust_agnes$cluster)
+agnes_stats_PF$avg.silwidth
+agnes_stats_PF$cluster.size
+```
+
+```{r}
+C_clust_agnes <- eclust(scaled_C, k=2, FUNcluster = 'agnes', hc_method = 'ward.D2')
+pltree(C_clust_agnes, hang = -1, main = "C Dendrogram - AGNES", cex = 0.47)
+rect.hclust(C_clust_agnes, k=2, border='red')
+
+agnes_stats_C <- cluster.stats(dist(scaled_C), C_clust_agnes$cluster)
+agnes_stats_C$avg.silwidth
+agnes_stats_C$cluster.size
 ```
 
 ## Data analysis within clusters.
