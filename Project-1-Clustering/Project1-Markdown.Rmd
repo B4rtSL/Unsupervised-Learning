@@ -206,7 +206,7 @@ get_clust_tendency(scaled_C, 2, graph=T)
 ::: {style="text-align: justify"}
 Knowing that the data could be significantly clustered we continue the analysis with checking how well the data could be clustered with the k-means and PAM clustering methods and what is more important for how many clusters it would work the best.
 
-The key difference between these two methods is that k-means is based on idea of centroids, while PAM is based on the idea of medoids.
+The key difference between these two methods is that k-means is based on the idea of centroids, while PAM is based on the idea of medoids.
 
 The CLARA method has no use in this case, as the data set is relatively small - PAM algorithm should be good enough (as they both work based on medoids concept).
 :::
@@ -568,10 +568,12 @@ summary(stats_C[stats_C$cluster_label == 1,2:12])
 summary(stats_C[stats_C$cluster_label == 2,2:12])
 ```
 
+### Conclusions.
+
 ::: {style="text-align: justify"}
 Comparison of the statistics within the clusters quite well reflects the differences between the players abilities and impact. The conclusion is that each time one of the clusters gathers players with significant impact on the court and the other one gathers players which have some areas that need improvements. It is especially visible by the statistics of VORP and WS.48, which in the case of cluster containing better players are way above league average (shown in the section of 'Data set review'), with the other one below the league standard. The interpretation is quite simple - the players in that group significantly contribute to the teams winning and their replacement is most likely to cause disadvantage on the court or the team.
 
-To give a few more examples, below, the reader may find Top 6 players for each position out of both clusters. As also the silhouette graphs suggest, there are some players, that are quite on the edge of both clusters, which is visible also on the surnames display, but as the boundary has to be drawn somewhere, they are placed in the second cluster for each position by the algorithm.
+To give a few more examples, below, the reader may find Top 6 players for each position out of both clusters. As also the silhouette graphs suggest, there are some players, that are quite on the edge of both clusters, which is visible also on the surnames display, but as the boundary has to be drawn somewhere, it is important to always look carefully at the results of algorithms' work.
 :::
 
 ```{r}
