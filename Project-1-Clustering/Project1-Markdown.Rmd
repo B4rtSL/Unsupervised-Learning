@@ -8,7 +8,7 @@ date: "2023-12-08"
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-# NBA Salaries & Statistics data set - Clustering
+# NBA Statistics data set - Clustering.
 
 ## Introduction.
 
@@ -36,7 +36,6 @@ Taking into consideration the focus of above analyses on players tendencies and 
 
 ```{r}
 data <- read.csv('nba_2022-23_all_stats_with_salary.csv')
-
 ```
 
 ```{r}
@@ -94,16 +93,41 @@ columns_shortcut = c('Player.Name','MP', 'PTS', 'AST', 'STL', 'BLK', 'TRB', 'eFG
 ```
 
 ::: {style="text-align: justify"}
-The data is divided to 5 sub-groups based on the on-court role. Statistical summary of characteristics for each group may be found below.
+The data is divided to 5 sub-groups based on the classical on-court role. Statistical summary of characteristics for each group may be found below.
+
+In order to see the whole table in correct size and quality please click the "Show in the new window" button. Unfortunately the number of chosen stats exceeds the Markdown's ability to display them conveniently.
+
+The statistics themselves reflect:
+
+MP - Minutes played per game.
+
+PTS - Points per game.
+
+AST - Assists per game.
+
+STL - Steals per game.
+
+BLK - Blocks per game.
+
+TRB - Total rebounds per game (offensive + defensive rebounds).
+
+eFG. - Effective Field Goal Percentage (shooting statistic adjusted for worth of 3-point and 2-point shots).
+
+TS. - True Shooting Percentage - measure of shooting efficiency that takes into account field goals, 3-point field goals, and free throws.
+
+USG. - Usage Percentage - estimate of the percentage of team plays used by a player while he was on the floor.
+
+WS.48 - Win Shares Per 48 Minutes - an estimate of the number of wins contributed by the player per 48 minutes.
+
+VORP - Value Over Replacement Player - a player's collective impact on their team, in contrast to that of an average player who could replace them in the same position.
 :::
 
 ```{r}
-
 stats_PG = shorter_stats[shorter_stats$Position == 'PG', columns_shortcut]
 summary(stats_PG[,2:12])
 ```
 
-```{r echo=TRUE}
+```{r, echo=TRUE}
 
 stats_SG = shorter_stats[shorter_stats$Position == 'SG', columns_shortcut]
 summary(stats_SG[,2:12])
@@ -148,19 +172,14 @@ The data is then standardized with the z-score method.
 
 ```{r}
 scaled_PG = as.data.frame(lapply(stats_PG[,2:12], scale))
-rownames(scaled_PG) = stats_PG$Player.Name
 
 scaled_SG = as.data.frame(lapply(stats_SG[,2:12], scale))
-rownames(scaled_SG) = stats_SG$Player.Name
 
 scaled_SF = as.data.frame(lapply(stats_SF[,2:12], scale))
-rownames(scaled_SF) = stats_SF$Player.Name
 
 scaled_PF = as.data.frame(lapply(stats_PF[,2:12], scale))
-rownames(scaled_PF) = stats_PF$Player.Name
 
 scaled_C = as.data.frame(lapply(stats_C[,2:12], scale))
-rownames(scaled_C) = stats_C$Player.Name
 ```
 
 ## Clustering tendency.
@@ -180,7 +199,7 @@ get_clust_tendency(scaled_PF, 2, graph=T)
 get_clust_tendency(scaled_C, 2, graph=T)
 ```
 
-## Partitional clustering.
+## Distance-based clustering.
 
 ### Optimal number of clusters for each group based on court role.
 
@@ -249,7 +268,8 @@ grid.arrange(
   fviz_cluster(PG_clust, 
                data = scaled_PG, 
                elipse.type = 'convex', 
-               main='Kmeans PG'),
+               main='Kmeans PG',
+               show_labels = FALSE),
   fviz_silhouette(PG_clust),
   ncol=2)
 
@@ -363,14 +383,16 @@ weighted.mean(pam_sils, pam_weigths)
 ```
 
 ::: {style="text-align: justify"}
-Average width for the whole data set based on court role is higher for the PAM clustering method.
+Average width for the whole data set based on court role is minimally higher for the PAM clustering method.
 :::
 
 ## Hierarchical clustering.
 
 ### Optimal number of clusters.
 
+::: {style="text-align: justify"}
 We consider two types of hierarchical clustering, divisive (top-down) and agglomerative (bottom-up). The divisive approach means that division starts from each point being in the same cluster, dividing them then into smaller pairs, with the agglomerative approach being the opposite of the aforementioned.
+:::
 
 ```{r}
 fviz_nbclust(scaled_PG, FUNcluster = hcut, method = 'silhouette') + theme_classic() + ggtitle('Hierarchical PG')
@@ -384,13 +406,25 @@ fviz_nbclust(scaled_PF, FUNcluster = hcut, method = 'silhouette') + theme_classi
 fviz_nbclust(scaled_C, FUNcluster = hcut, method = 'silhouette') + theme_classic() + ggtitle('Hierarchical C')
 ```
 
+::: {style="text-align: justify"}
 For each on-court position, as in the partition clustering, the best number of clusters is 2. The analysis with the both top-down and bottom-up approach will be conducted, taking various linkage types into consideration. The best method will be selected based on the silhouette width, as in the case of partition clustering and the values will be compared to select the result, on which the final analysis of clusters contents will be conducted.
+:::
 
-### Divisive clustering - DIANA.
+```{r}
+# setting names of rows to Players Names to better visualize dendrograms
+
+rownames(scaled_PG) = stats_PG$Player.Name
+rownames(scaled_SG) = stats_SG$Player.Name
+rownames(scaled_SF) = stats_SF$Player.Name
+rownames(scaled_PF) = stats_PF$Player.Name
+rownames(scaled_C) = stats_C$Player.Name
+```
+
+### Divisive clustering - DIANA, Ward linkage.
 
 ```{r}
 library(fpc)
-PG_clust_diana <- eclust(scaled_PG, k=2, FUNcluster = 'diana')
+PG_clust_diana <- eclust(scaled_PG, k=2, FUNcluster = 'diana', hc_method = 'ward.D')
 pltree(PG_clust_diana, hang = -1, main = "PG Dendrogram - DIANA", cex = 0.47)
 rect.hclust(PG_clust_diana, k=2, border='red')
 
@@ -400,7 +434,7 @@ diana_stats_PG$cluster.size
 ```
 
 ```{r}
-SG_clust_diana <- eclust(scaled_SG, k=2, FUNcluster = 'diana')
+SG_clust_diana <- eclust(scaled_SG, k=2, FUNcluster = 'diana', hc_method = 'ward.D')
 pltree(SG_clust_diana, hang = -1, main = "SG Dendrogram - DIANA", cex = 0.47)
 rect.hclust(SG_clust_diana, k=2, border='red')
 
@@ -410,7 +444,7 @@ diana_stats_SG$cluster.size
 ```
 
 ```{r}
-SF_clust_diana <- eclust(scaled_SF, k=2, FUNcluster = 'diana')
+SF_clust_diana <- eclust(scaled_SF, k=2, FUNcluster = 'diana', hc_method = 'ward.D')
 pltree(SF_clust_diana, hang = -1, main = "SF Dendrogram - DIANA", cex = 0.47)
 rect.hclust(SF_clust_diana, k=2, border='red')
 
@@ -420,7 +454,7 @@ diana_stats_SF$cluster.size
 ```
 
 ```{r}
-PF_clust_diana <- eclust(scaled_PF, k=2, FUNcluster = 'diana')
+PF_clust_diana <- eclust(scaled_PF, k=2, FUNcluster = 'diana', hc_method = 'ward.D')
 pltree(PF_clust_diana, hang = -1, main = "PF Dendrogram - DIANA", cex = 0.47)
 rect.hclust(PF_clust_diana, k=2, border='red')
 
@@ -430,7 +464,7 @@ diana_stats_PF$cluster.size
 ```
 
 ```{r}
-C_clust_diana <- eclust(scaled_C, k=2, FUNcluster = 'diana')
+C_clust_diana <- eclust(scaled_C, k=2, FUNcluster = 'diana', hc_method = 'ward.D')
 pltree(C_clust_diana, hang = -1, main = "C Dendrogram - DIANA", cex = 0.47)
 rect.hclust(C_clust_diana, k=2, border='red')
 
@@ -439,10 +473,10 @@ diana_stats_C$avg.silwidth
 diana_stats_C$cluster.size
 ```
 
-### Agglomerative clustering - AGNES.
+### Agglomerative clustering - AGNES, Ward linkage.
 
 ```{r}
-PG_clust_agnes <- eclust(scaled_PG, k=2, FUNcluster = 'agnes', hc_method = 'ward.D2')
+PG_clust_agnes <- eclust(scaled_PG, k=2, FUNcluster = 'agnes', hc_method = 'ward.D')
 pltree(PG_clust_agnes, hang = -1, main = "PG Dendrogram - AGNES", cex = 0.47)
 rect.hclust(PG_clust_agnes, k=2, border='red')
 
@@ -452,7 +486,7 @@ agnes_stats_PG$cluster.size
 ```
 
 ```{r}
-SG_clust_agnes <- eclust(scaled_SG, k=2, FUNcluster = 'agnes', hc_method = 'ward.D2')
+SG_clust_agnes <- eclust(scaled_SG, k=2, FUNcluster = 'agnes', hc_method = 'ward.D')
 pltree(SG_clust_agnes, hang = -1, main = "SG Dendrogram - AGNES", cex = 0.47)
 rect.hclust(SG_clust_agnes, k=2, border='red')
 
@@ -462,7 +496,7 @@ agnes_stats_SG$cluster.size
 ```
 
 ```{r}
-SF_clust_agnes <- eclust(scaled_SF, k=2, FUNcluster = 'agnes', hc_method = 'ward.D2')
+SF_clust_agnes <- eclust(scaled_SF, k=2, FUNcluster = 'agnes', hc_method = 'ward.D')
 pltree(SF_clust_agnes, hang = -1, main = "SF Dendrogram - AGNES", cex = 0.47)
 rect.hclust(SF_clust_agnes, k=2, border='red')
 
@@ -472,7 +506,7 @@ agnes_stats_SF$cluster.size
 ```
 
 ```{r}
-PF_clust_agnes <- eclust(scaled_PF, k=2, FUNcluster = 'agnes', hc_method = 'ward.D2')
+PF_clust_agnes <- eclust(scaled_PF, k=2, FUNcluster = 'agnes', hc_method = 'ward.D')
 pltree(PF_clust_agnes, hang = -1, main = "PF Dendrogram - AGNES", cex = 0.47)
 rect.hclust(PF_clust_agnes, k=2, border='red')
 
@@ -482,7 +516,7 @@ agnes_stats_PF$cluster.size
 ```
 
 ```{r}
-C_clust_agnes <- eclust(scaled_C, k=2, FUNcluster = 'agnes', hc_method = 'ward.D2')
+C_clust_agnes <- eclust(scaled_C, k=2, FUNcluster = 'agnes', hc_method = 'ward.D')
 pltree(C_clust_agnes, hang = -1, main = "C Dendrogram - AGNES", cex = 0.47)
 rect.hclust(C_clust_agnes, k=2, border='red')
 
@@ -491,4 +525,83 @@ agnes_stats_C$avg.silwidth
 agnes_stats_C$cluster.size
 ```
 
+::: {style="text-align: justify"}
+The results show that divisive clustering algorithm got a bit 'lost' during division of the data to clusters. There are mostly clusters which contain almost every player from the data-set in one cluster and just a few in the other cluster. Such results do not give us any insights into the data.
+
+On the other hand the result for agglomerative approach are a bit closer to the expected outcome, with the contents of clusters representing quite visible division into "positive/negative impact" players, nevertheless the silhouette width values are lower than for the PAM algorithm, therefore the final analysis will be conducted on the results of the PAM clustering.
+:::
+
 ## Data analysis within clusters.
+
+```{r}
+stats_PG['cluster_label'] = PG_clust_pam$clustering
+stats_SG['cluster_label'] = SG_clust_pam$clustering
+stats_SF['cluster_label'] = SF_clust_pam$clustering
+stats_PF['cluster_label'] = PF_clust_pam$clustering
+stats_C['cluster_label'] = C_clust_pam$clustering
+```
+
+### Comparison of statistics inside of clusters.
+
+```{r}
+summary(stats_PG[stats_PG$cluster_label == 1,2:12])
+summary(stats_PG[stats_PG$cluster_label == 2,2:12])
+```
+
+```{r}
+summary(stats_SG[stats_SG$cluster_label == 1,2:12])
+summary(stats_SG[stats_SG$cluster_label == 2,2:12])
+```
+
+```{r}
+summary(stats_SF[stats_SF$cluster_label == 1,2:12])
+summary(stats_SF[stats_SF$cluster_label == 2,2:12])
+```
+
+```{r}
+summary(stats_PF[stats_PF$cluster_label == 1,2:12])
+summary(stats_PF[stats_PF$cluster_label == 2,2:12])
+```
+
+```{r}
+summary(stats_C[stats_C$cluster_label == 1,2:12])
+summary(stats_C[stats_C$cluster_label == 2,2:12])
+```
+
+::: {style="text-align: justify"}
+Comparison of the statistics within the clusters quite well reflects the differences between the players abilities and impact. The conclusion is that each time one of the clusters gathers players with significant impact on the court and the other one gathers players which have some areas that need improvements. It is especially visible by the statistics of VORP and WS.48, which in the case of cluster containing better players are way above league average (shown in the section of 'Data set review'), with the other one below the league standard. The interpretation is quite simple - the players in that group significantly contribute to the teams winning and their replacement is most likely to cause disadvantage on the court or the team.
+
+To give a few more examples, below, the reader may find Top 6 players for each position out of both clusters. As also the silhouette graphs suggest, there are some players, that are quite on the edge of both clusters, which is visible also on the surnames display, but as the boundary has to be drawn somewhere, they are placed in the second cluster for each position by the algorithm.
+:::
+
+```{r}
+cat('Point Guards\n')
+head(stats_PG[stats_PG$cluster_label == 1,1])
+head(stats_PG[stats_PG$cluster_label == 2,1])
+
+cat('Shooting Guards\n')
+head(stats_SG[stats_SG$cluster_label == 1,1])
+head(stats_SG[stats_SG$cluster_label == 2,1])
+
+cat('Small Forwards\n')
+head(stats_SF[stats_SF$cluster_label == 1,1])
+head(stats_SF[stats_SF$cluster_label == 2,1])
+
+cat('Power Forwards\n')
+head(stats_PF[stats_PF$cluster_label == 1,1])
+head(stats_PF[stats_PF$cluster_label == 2,1])
+
+cat('Centers\n')
+head(stats_C[stats_C$cluster_label == 1,1])
+head(stats_C[stats_C$cluster_label == 2,1])
+```
+
+## References.
+
+::: {style="text-align: justify"}
+<https://bestballstats.com/2022/07/23/generating-nba-archetypes-using-k-means-clustering/>
+
+<https://towardsdatascience.com/redefining-nba-player-classifications-using-clustering-36a348fa54a8>
+
+<https://www.basketball-reference.com/about/glossary.html>
+:::
