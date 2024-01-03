@@ -1,0 +1,16 @@
+---
+title: "Project2-Markdown"
+output: html_document
+date: "2024-01-03"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Cereals PCA analysis.
+
+```{r}
+cereal = read.csv('cereal.csv')
+head(cereal)
+```
