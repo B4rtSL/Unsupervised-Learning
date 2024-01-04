@@ -5,12 +5,55 @@ date: "2024-01-03"
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(echo = FALSE)
 ```
 
-## Cereals PCA analysis.
+## Life Expectancy data set PCA analysis.
 
 ```{r}
-cereal = read.csv('cereal.csv')
-head(cereal)
+life = read.csv('Life-Expectancy-Data.csv')
+str(life)
+head(life)
+summary(life)
+life_num = life[, 4:22]
+```
+
+```{r}
+library(corrplot)
+library(psych)
+library(zoo)
+
+life_num_filled = na.aggregate(life_num, FUN = mean)
+life_num_filled[!complete.cases(life_num_filled),]
+```
+
+```{r}
+life_scaled = scale(life_num_filled)
+
+cor_life = cor(life_scaled)
+corrplot(cor_life, method = 'circle', type = "lower", order = "hclust", tl.col = "black", tl.cex = 0.7, number.cex = 0.9)
+
+cortest.bartlett(cor_life)
+KMO(cor_life)
+```
+
+```{r}
+library(kableExtra)
+summary(life_num_filled) %>% kbl() %>% kable_paper("hover")
+```
+
+```{r}
+life_num_filled = lapply(life_num_filled, as.numeric)
+str(life_num_filled)
+
+life_num_filled = as.data.frame(life_num_filled)
+```
+
+```{r}
+library(Hmisc)
+
+hist.data.frame(life_num_filled[,1:6])
+hist.data.frame(life_num_filled[,7:12])
+hist.data.frame(life_num_filled[,12:17])
+hist.data.frame(life_num_filled[,18:19])
 ```
