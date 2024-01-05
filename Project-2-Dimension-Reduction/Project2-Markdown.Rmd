@@ -12,11 +12,23 @@ knitr::opts_chunk$set(echo = FALSE)
 
 ## Introduction.
 
-### Literature review.
+The data set, spanning 2000 to 2015 for 193 countries, addresses gaps in previous life expectancy studies. It incorporates critical health, economic, and social factors from the Global Health Observatory (GHO) and the United Nations. The dataset, with 22 columns and 2938 rows, gathers variables that might be categorized into 4 groups: immunization, mortality, economic, and social factors. The data aims to answer key questions regarding these factors and their correlation with life expectancy.
+
+Link to data: <https://www.kaggle.com/datasets/kumarajarshi/life-expectancy-who/data>
+
+My goal is to check whether there is a chance to reduce the dimensions of this data set. The perfect result would be 4 Principal Components, each consisting of variables that correspond well with above stated categories.
+
+### Literature review for the PCA method.
+
+Principal Component Analysis is a statistical technique used for dimensionality reduction and feature extraction in data analysis. Its primary goal is to transform a data set with multiple correlated variables into a new set of uncorrelated variables, known as principal components while keeping as much variance from the original variables as possible. Subset of principal components can be chosen by arranging them in descending order of variance, capturing essential data information and discarding less important features. Wider explanation may be found in [1].
+
+The usage of method might be preceded by the analysis of data suitability for the factor analysis. IBM's manual [2] for the SPSS Statistics program suggests Kaiser--Meyer--Olkin and Bartlett's tests as a "go-to" methods, and the papers [3] and [4] show such practice.
 
 ## Data set preliminary review.
 
-### Description of variables.
+### Structure and summary of variables.
+
+The Principal Component Analysis will be conducted only on the numerical variables, thus Country, Year and Status columns are dropped from the data set. There are some missing values, which due to their number are substituted with the mean values for each variable. After final check of data set the variables are standardized with the z-score method.
 
 ```{r echo=TRUE}
 life = read.csv('Life-Expectancy-Data.csv')
@@ -28,20 +40,34 @@ summary(life)
 life_num = life[, 4:22]
 ```
 
-```{r}
+```{r, echo=FALSE}
+# libraries for further analysis
 library(corrplot)
 library(psych)
 library(zoo)
+library(kableExtra)
+library(Hmisc)
+library(factoextra)
+```
 
+```{r}
 life_num_filled = na.aggregate(life_num, FUN = mean)
 life_num_filled[!complete.cases(life_num_filled),]
+
+life_scaled = scale(life_num_filled)
 ```
 
 ### Is the data set eligible for factor analysis?
 
-```{r}
-life_scaled = scale(life_num_filled)
+Kaiser--Meyer--Olkin test allows for checking the proportion of variance among variables that might be caused by underlying factors. Values above 0.6 for this test indicate that data is suitable for factor analysis.
 
+Bartlett's test on the other hand tests the degree of deviation from an identity matrix. The null hypothesis of the test is that correlation matrix is an identity matrix (so the further we are from this state the better) which indicates that variables are unrelated and not suitable for factor analysis. The result of the test is a p-value, so values lower than standard significance level of 0.05 are in the area of interest.
+
+Below results of p-value equal to almost 0 and KMO equal to 0.81 suggest that the data set is well suitable for the Principal Component Analysis.
+
+The correlation matrix shows biggests correlation between GDP and Schooling level and percentage expenditure on health per capita.
+
+```{r}
 cor_life = cor(life_scaled)
 corrplot(cor_life, method = 'circle', type = "lower", order = "hclust", tl.col = "black", tl.cex = 0.7, number.cex = 0.9)
 
@@ -52,13 +78,10 @@ KMO(cor_life)
 ### Preliminary statistics.
 
 ```{r echo=FALSE}
-library(kableExtra)
 summary(life_num_filled) %>% kbl() %>% kable_paper("hover")
 ```
 
 ```{r echo=FALSE}
-library(Hmisc)
-
 life_num_filled = lapply(life_num_filled, as.numeric)
 life_num_filled = as.data.frame(life_num_filled)
 
@@ -71,7 +94,6 @@ hist.data.frame(life_num_filled[,18:19])
 ## Principal component analysis.
 
 ```{r echo=FALSE}
-library(factoextra)
 
 pca = prcomp(life_scaled, center=FALSE, scale=FALSE)
 ```
@@ -107,21 +129,21 @@ fviz_pca_var(pca, col.var = "blue")
 fviz_pca_ind(pca, col.ind="contrib", geom = "point", gradient.cols = c("green", "yellow", "red" , "purple", "black"))
 ```
 
-Contribution visualises how much each variable contributes to creating the principal components. Higher contribution values mean that a variable has a more significant impact on shaping the principal components.
+Contribution visualizes how much each variable contributes to creating the principal components. Higher contribution values mean that a variable has a more significant impact on shaping the principal components. Only a few variables contribute on a high level in this data set.
 
 ```{r}
 
 fviz_pca_ind(pca, col.ind="cos2", geom = "point", gradient.cols = c("green", "yellow", "red" , "purple", "black"))
 ```
 
-Cos2 indicates how well individual observations are represented in the reduced-dimensional space created by principal components. The squared cosine for each observation on a principal component reflects the proportion of its variance explained by that component. Higher squared cosine values suggest effective representation by the principal components.
+Cos2 indicates how well individual observations are represented in the reduced-dimensional space created by principal components. The squared cosine for each observation on a principal component reflects the proportion of its variance explained by that component. Higher squared cosine values suggest effective representation by the principal components. In this case we can identify fair amount of well represented observations.
 
 ```{r}
-PC1 <- fviz_contrib(pca, choice = "var", axes = 1)
-PC2 <- fviz_contrib(pca, choice = "var", axes = 2)
-PC3 <- fviz_contrib(pca, choice = "var", axes = 3)
-PC4 <- fviz_contrib(pca, choice = "var", axes = 4)
-PC5 <- fviz_contrib(pca, choice = "var", axes = 5)
+# PC1 <- fviz_contrib(pca, choice = "var", axes = 1)
+# PC2 <- fviz_contrib(pca, choice = "var", axes = 2)
+# PC3 <- fviz_contrib(pca, choice = "var", axes = 3)
+# PC4 <- fviz_contrib(pca, choice = "var", axes = 4)
+# PC5 <- fviz_contrib(pca, choice = "var", axes = 5)
 
 fviz_contrib(pca, choice = "var", axes = 1)
 fviz_contrib(pca, choice = "var", axes = 2)
@@ -135,10 +157,10 @@ fviz_contrib(pca, choice = "var", axes = 5)
 
 ## References.
 
-<https://www.ibm.com/docs/en/spss-statistics/28.0.0?topic=detection-kmo-bartletts-test>
+[1] Abdi, H. and Williams, L.J. (2010) Principal Component Analysis. Wiley Interdisciplinary Reviews: Computational Statistics, 2, 433-459.
 
-Shrestha, Anil & Luo, Wei. (2017). Analysis of Groundwater Nitrate Contamination in the Central Valley: Comparison of the Geodetector Method, Principal Component Analysis and Geographically Weighted Regression. ISPRS International Journal of Geo-Information. 6. 297. 10.3390/ijgi6100297.
+[2] <https://www.ibm.com/docs/en/spss-statistics/28.0.0?topic=detection-kmo-bartletts-test>
 
-Thomson RG, De Brún A, Flynn D, et al. Factors that influence variation in clinical decision-making about thrombolysis in the treatment of acute ischaemic stroke: results of a discrete choice experiment. Southampton (UK): NIHR Journals Library; 2017 Jan. (Health Services and Delivery Research, No. 5.4.) Appendix 5, Factor analysis of Institutional Culture Scale. Available from: <https://www.ncbi.nlm.nih.gov/books/NBK410188/>
+[3] Shrestha, Anil & Luo, Wei. (2017). Analysis of Groundwater Nitrate Contamination in the Central Valley: Comparison of the Geodetector Method, Principal Component Analysis and Geographically Weighted Regression. ISPRS International Journal of Geo-Information. 6. 297. 10.3390/ijgi6100297.
 
-Abdi, H. and Williams, L.J. (2010) Principal Component Analysis. Wiley Interdisciplinary Reviews: Computational Statistics, 2, 433-459.
+[4] Thomson RG, De Brún A, Flynn D, et al. Factors that influence variation in clinical decision-making about thrombolysis in the treatment of acute ischaemic stroke: results of a discrete choice experiment. Southampton (UK): NIHR Journals Library; 2017 Jan. (Health Services and Delivery Research, No. 5.4.) Appendix 5, Factor analysis of Institutional Culture Scale. Available from: <https://www.ncbi.nlm.nih.gov/books/NBK410188/>
