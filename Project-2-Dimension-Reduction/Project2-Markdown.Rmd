@@ -8,13 +8,23 @@ date: "2024-01-03"
 knitr::opts_chunk$set(echo = FALSE)
 ```
 
-## Life Expectancy data set PCA analysis.
+# Life Expectancy data set PCA analysis.
 
-```{r}
+## Introduction.
+
+### Literature review.
+
+## Data set preliminary review.
+
+### Description of variables.
+
+```{r echo=TRUE}
 life = read.csv('Life-Expectancy-Data.csv')
 str(life)
 head(life)
 summary(life)
+
+# dropping the Country, Year, Status columns
 life_num = life[, 4:22]
 ```
 
@@ -27,6 +37,8 @@ life_num_filled = na.aggregate(life_num, FUN = mean)
 life_num_filled[!complete.cases(life_num_filled),]
 ```
 
+### Is the data set eligible for factor analysis?
+
 ```{r}
 life_scaled = scale(life_num_filled)
 
@@ -37,23 +49,96 @@ cortest.bartlett(cor_life)
 KMO(cor_life)
 ```
 
-```{r}
+### Preliminary statistics.
+
+```{r echo=FALSE}
 library(kableExtra)
 summary(life_num_filled) %>% kbl() %>% kable_paper("hover")
 ```
 
-```{r}
-life_num_filled = lapply(life_num_filled, as.numeric)
-str(life_num_filled)
-
-life_num_filled = as.data.frame(life_num_filled)
-```
-
-```{r}
+```{r echo=FALSE}
 library(Hmisc)
+
+life_num_filled = lapply(life_num_filled, as.numeric)
+life_num_filled = as.data.frame(life_num_filled)
 
 hist.data.frame(life_num_filled[,1:6])
 hist.data.frame(life_num_filled[,7:12])
 hist.data.frame(life_num_filled[,12:17])
 hist.data.frame(life_num_filled[,18:19])
 ```
+
+## Principal component analysis.
+
+```{r echo=FALSE}
+library(factoextra)
+
+pca = prcomp(life_scaled, center=FALSE, scale=FALSE)
+```
+
+### Eigenvalues.
+
+```{r}
+fviz_eig(pca, choice = "eigenvalue",  addlabels = TRUE,   main = "Eigenvalues")
+```
+
+### Variance.
+
+```{r}
+fviz_eig(pca, choice = 'variance', addlabels = TRUE)
+```
+
+```{r}
+pca_summary = summary(pca)
+plot(pca_summary$importance[3,], ylab = 'Cumulative Variance', xlab = 'Component Index', main = 'Cumulative variance carried by components')
+```
+
+### Loadings.
+
+```{r}
+pca$rotation %>% kbl() %>% kable_paper("hover")
+```
+
+```{r}
+fviz_pca_var(pca, col.var = "blue")
+```
+
+```{r}
+fviz_pca_ind(pca, col.ind="contrib", geom = "point", gradient.cols = c("green", "yellow", "red" , "purple", "black"))
+```
+
+Contribution visualises how much each variable contributes to creating the principal components. Higher contribution values mean that a variable has a more significant impact on shaping the principal components.
+
+```{r}
+
+fviz_pca_ind(pca, col.ind="cos2", geom = "point", gradient.cols = c("green", "yellow", "red" , "purple", "black"))
+```
+
+Cos2 indicates how well individual observations are represented in the reduced-dimensional space created by principal components. The squared cosine for each observation on a principal component reflects the proportion of its variance explained by that component. Higher squared cosine values suggest effective representation by the principal components.
+
+```{r}
+PC1 <- fviz_contrib(pca, choice = "var", axes = 1)
+PC2 <- fviz_contrib(pca, choice = "var", axes = 2)
+PC3 <- fviz_contrib(pca, choice = "var", axes = 3)
+PC4 <- fviz_contrib(pca, choice = "var", axes = 4)
+PC5 <- fviz_contrib(pca, choice = "var", axes = 5)
+
+fviz_contrib(pca, choice = "var", axes = 1)
+fviz_contrib(pca, choice = "var", axes = 2)
+fviz_contrib(pca, choice = "var", axes = 3)
+fviz_contrib(pca, choice = "var", axes = 4)
+fviz_contrib(pca, choice = "var", axes = 5)
+
+# gridExtra::grid.arrange(PC1, PC2, PC3, PC4, PC5, ncol = 3, nrow=2)
+
+```
+
+## References.
+
+<https://www.ibm.com/docs/en/spss-statistics/28.0.0?topic=detection-kmo-bartletts-test>
+
+Shrestha, Anil & Luo, Wei. (2017). Analysis of Groundwater Nitrate Contamination in the Central Valley: Comparison of the Geodetector Method, Principal Component Analysis and Geographically Weighted Regression. ISPRS International Journal of Geo-Information. 6. 297. 10.3390/ijgi6100297.
+
+Thomson RG, De Brún A, Flynn D, et al. Factors that influence variation in clinical decision-making about thrombolysis in the treatment of acute ischaemic stroke: results of a discrete choice experiment. Southampton (UK): NIHR Journals Library; 2017 Jan. (Health Services and Delivery Research, No. 5.4.) Appendix 5, Factor analysis of Institutional Culture Scale. Available from: <https://www.ncbi.nlm.nih.gov/books/NBK410188/>
+
+Abdi, H. and Williams, L.J. (2010) Principal Component Analysis. Wiley Interdisciplinary Reviews: Computational Statistics, 2, 433-459.
