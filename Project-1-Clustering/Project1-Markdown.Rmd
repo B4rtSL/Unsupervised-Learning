@@ -95,8 +95,6 @@ columns_shortcut = c('Player.Name','MP', 'PTS', 'AST', 'STL', 'BLK', 'TRB', 'eFG
 ::: {style="text-align: justify"}
 The data is divided to 5 sub-groups based on the classical on-court role. Statistical summary of characteristics for each group may be found below.
 
-In order to see the whole table in correct size and quality please click the "Show in the new window" button. Unfortunately the number of chosen stats exceeds the Markdown's ability to display them conveniently.
-
 The statistics themselves reflect:
 
 MP - Minutes played per game.
@@ -123,30 +121,32 @@ VORP - Value Over Replacement Player - a player's collective impact on their tea
 :::
 
 ```{r}
+library(kableExtra)
+
 stats_PG = shorter_stats[shorter_stats$Position == 'PG', columns_shortcut]
-summary(stats_PG[,2:12])
+summary(stats_PG[,2:12]) %>% kbl() %>% kable_paper("hover")
 ```
 
 ```{r, echo=TRUE}
 
 stats_SG = shorter_stats[shorter_stats$Position == 'SG', columns_shortcut]
-summary(stats_SG[,2:12])
+summary(stats_SG[,2:12]) %>% kbl() %>% kable_paper("hover")
 ```
 
 ```{r}
 stats_SF = shorter_stats[shorter_stats$Position == 'SF', columns_shortcut]
-summary(stats_SF[,2:12])
+summary(stats_SF[,2:12]) %>% kbl() %>% kable_paper("hover")
 ```
 
 ```{r}
 stats_PF = shorter_stats[shorter_stats$Position == 'PF', columns_shortcut]
-summary(stats_PF[,2:12])
+summary(stats_PF[,2:12]) %>% kbl() %>% kable_paper("hover")
 
 ```
 
 ```{r}
 stats_C = shorter_stats[shorter_stats$Position == 'C', columns_shortcut]
-summary(stats_C[,2:12])
+summary(stats_C[,2:12]) %>% kbl() %>% kable_paper("hover")
 ```
 
 ::: {style="text-align: justify"}
@@ -544,28 +544,33 @@ stats_C['cluster_label'] = C_clust_pam$clustering
 ### Comparison of statistics inside of clusters.
 
 ```{r}
-summary(stats_PG[stats_PG$cluster_label == 1,2:12])
-summary(stats_PG[stats_PG$cluster_label == 2,2:12])
+summary(stats_PG[stats_PG$cluster_label == 1,2:12]) %>% kbl() %>% kable_paper("hover")
+
+summary(stats_PG[stats_PG$cluster_label == 2,2:12]) %>% kbl() %>% kable_paper("hover")
 ```
 
 ```{r}
-summary(stats_SG[stats_SG$cluster_label == 1,2:12])
-summary(stats_SG[stats_SG$cluster_label == 2,2:12])
+summary(stats_SG[stats_SG$cluster_label == 1,2:12]) %>% kbl() %>% kable_paper("hover")
+
+summary(stats_SG[stats_SG$cluster_label == 2,2:12]) %>% kbl() %>% kable_paper("hover")
 ```
 
 ```{r}
-summary(stats_SF[stats_SF$cluster_label == 1,2:12])
-summary(stats_SF[stats_SF$cluster_label == 2,2:12])
+summary(stats_SF[stats_SF$cluster_label == 1,2:12]) %>% kbl() %>% kable_paper("hover")
+
+summary(stats_SF[stats_SF$cluster_label == 2,2:12]) %>% kbl() %>% kable_paper("hover")
 ```
 
 ```{r}
-summary(stats_PF[stats_PF$cluster_label == 1,2:12])
-summary(stats_PF[stats_PF$cluster_label == 2,2:12])
+summary(stats_PF[stats_PF$cluster_label == 1,2:12]) %>% kbl() %>% kable_paper("hover")
+
+summary(stats_PF[stats_PF$cluster_label == 2,2:12]) %>% kbl() %>% kable_paper("hover")
 ```
 
 ```{r}
-summary(stats_C[stats_C$cluster_label == 1,2:12])
-summary(stats_C[stats_C$cluster_label == 2,2:12])
+summary(stats_C[stats_C$cluster_label == 1,2:12]) %>% kbl() %>% kable_paper("hover")
+
+summary(stats_C[stats_C$cluster_label == 2,2:12]) %>% kbl() %>% kable_paper("hover")
 ```
 
 ### Conclusions.
