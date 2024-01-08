@@ -12,23 +12,71 @@ knitr::opts_chunk$set(echo = FALSE)
 
 ## Introduction.
 
+::: {style="text-align: justify"}
 The data set, spanning 2000 to 2015 for 193 countries, addresses gaps in previous life expectancy studies. It incorporates critical health, economic, and social factors from the Global Health Observatory (GHO) and the United Nations. The dataset, with 22 columns and 2938 rows, gathers variables that might be categorized into 4 groups: immunization, mortality, economic, and social factors. The data aims to answer key questions regarding these factors and their correlation with life expectancy.
 
 Link to data: <https://www.kaggle.com/datasets/kumarajarshi/life-expectancy-who/data>
 
 My goal is to check whether there is a chance to reduce the dimensions of this data set. The perfect result would be 4 Principal Components, each consisting of variables that correspond well with above stated categories.
+:::
 
 ### Literature review for the PCA method.
 
+::: {style="text-align: justify"}
 Principal Component Analysis is a statistical technique used for dimensionality reduction and feature extraction in data analysis. Its primary goal is to transform a data set with multiple correlated variables into a new set of uncorrelated variables, known as principal components while keeping as much variance from the original variables as possible. Subset of principal components can be chosen by arranging them in descending order of variance, capturing essential data information and discarding less important features. Wider explanation may be found in [1].
 
 The usage of method might be preceded by the analysis of data suitability for the factor analysis. IBM's manual [2] for the SPSS Statistics program suggests Kaiser--Meyer--Olkin and Bartlett's tests as a "go-to" methods, and the papers [3] and [4] show such practice.
+:::
 
 ## Data set preliminary review.
 
 ### Structure and summary of variables.
 
+::: {style="text-align: justify"}
 The Principal Component Analysis will be conducted only on the numerical variables, thus Country, Year and Status columns are dropped from the data set. There are some missing values, which due to their number are substituted with the mean values for each variable. After final check of data set the variables are standardized with the z-score method.
+:::
+
+::: {style="text-align: justify"}
+According to the description of the data set the variables correspond to:
+
+Life Expectancy - Life Expectancy in age
+
+Adult Mortality - Adult Mortality Rates of both sexes (probability of dying between 15 and 60 years per 1000 population)
+
+Infant Deaths - Number of Infant Deaths per 1000 population
+
+Alcohol - Alcohol, recorded per capita (15+) consumption (in litres of pure alcohol)
+
+Percentage Expenditure - Expenditure on health as a percentage of Gross Domestic Product per capita(%)
+
+Hepatitis B - Hepatitis B (HepB) immunization coverage among 1-year-olds (%)
+
+Measles - Measles - number of reported cases per 1000 population
+
+BMI - Average Body Mass Index of the entire population
+
+Under-Five Deaths - Number of under-five deaths per 1000 population
+
+Polio - Polio (Pol3) immunization coverage among 1-year-olds (%)
+
+Total Expenditure - General government expenditure on health as a percentage of total government expenditure (%)
+
+Diphtheria - Diphtheria tetanus toxoid and pertussis (DTP3) immunization coverage among 1-year-olds (%)
+
+HIV/AIDS - Deaths per 1,000 live births HIV/AIDS (0-4 years)
+
+GDP - Gross Domestic Product per capita (in USD)
+
+Population - Population of the country
+
+Thinness 1-19 years - Prevalence of thinness among children and adolescents for Age 10 to 19 (%)
+
+Thinness 5-9 years - Prevalence of thinness among children for Age 5 to 9(%)
+
+Income Composition of Resources - Human Development Index in terms of income composition of resources (index ranging from 0 to 1)
+
+Schooling - Number of years of Schooling (years)
+:::
 
 ```{r echo=TRUE}
 life = read.csv('Life-Expectancy-Data.csv')
@@ -59,13 +107,15 @@ life_scaled = scale(life_num_filled)
 
 ### Is the data set eligible for factor analysis?
 
+::: {style="text-align: justify"}
 Kaiser--Meyer--Olkin test allows for checking the proportion of variance among variables that might be caused by underlying factors. Values above 0.6 for this test indicate that data is suitable for factor analysis.
 
 Bartlett's test on the other hand tests the degree of deviation from an identity matrix. The null hypothesis of the test is that correlation matrix is an identity matrix (so the further we are from this state the better) which indicates that variables are unrelated and not suitable for factor analysis. The result of the test is a p-value, so values lower than standard significance level of 0.05 are in the area of interest.
 
 Below results of p-value equal to almost 0 and KMO equal to 0.81 suggest that the data set is well suitable for the Principal Component Analysis.
 
-The correlation matrix shows biggests correlation between GDP and Schooling level and percentage expenditure on health per capita.
+The correlation matrix shows biggest correlation between GDP and Schooling level and percentage expenditure on health per capita. There is also big correlation between deaths under 5 years old and infant deaths.
+:::
 
 ```{r}
 cor_life = cor(life_scaled)
@@ -100,11 +150,19 @@ pca = prcomp(life_scaled, center=FALSE, scale=FALSE)
 
 ### Eigenvalues.
 
+::: {style="text-align: justify"}
+Choosing right number of components may be based on the Kaiser rule, which states that only components with eigenvalues higher than 1 should be chosen. The eigenvalues help with quantifying the amount of variance explained by each principal component. According to that rule 5 components should be chosen.
+:::
+
 ```{r}
 fviz_eig(pca, choice = "eigenvalue",  addlabels = TRUE,   main = "Eigenvalues")
 ```
 
 ### Variance.
+
+::: {style="text-align: justify"}
+For 5 PCA components about 70% of the variance is explained.
+:::
 
 ```{r}
 fviz_eig(pca, choice = 'variance', addlabels = TRUE)
@@ -115,28 +173,41 @@ pca_summary = summary(pca)
 plot(pca_summary$importance[3,], ylab = 'Cumulative Variance', xlab = 'Component Index', main = 'Cumulative variance carried by components')
 ```
 
-### Loadings.
+### Loadings and contributions.
+
+::: {style="text-align: justify"}
+In the table below the reader may find the loadings of each variable for each component, which quantify the contribution of each original variable to the principal components.
+:::
 
 ```{r}
 pca$rotation %>% kbl() %>% kable_paper("hover")
 ```
 
 ```{r}
-fviz_pca_var(pca, col.var = "blue")
+fviz_pca_var(pca, col.var="contrib")+
+scale_color_gradient2(low="green", mid="red", high="purple", midpoint=8)
 ```
+
+::: {style="text-align: justify"}
+On the above graph the reader may see the relations between the variables. Those close to each other are correlated. The length of the arrows indicate the contribution of variables towards creation of PCA's. Due to high number of variables the graph is not the most convenient way to show such data as they overlap. But few important components could be red of it and they are: under.five.deaths, infant.deaths, schooling (each being a key indicator of countries' development).
+:::
 
 ```{r}
 fviz_pca_ind(pca, col.ind="contrib", geom = "point", gradient.cols = c("green", "yellow", "red" , "purple", "black"))
 ```
 
+::: {style="text-align: justify"}
 Contribution visualizes how much each variable contributes to creating the principal components. Higher contribution values mean that a variable has a more significant impact on shaping the principal components. Only a few variables contribute on a high level in this data set.
+:::
 
 ```{r}
 
 fviz_pca_ind(pca, col.ind="cos2", geom = "point", gradient.cols = c("green", "yellow", "red" , "purple", "black"))
 ```
 
+::: {style="text-align: justify"}
 Cos2 indicates how well individual observations are represented in the reduced-dimensional space created by principal components. The squared cosine for each observation on a principal component reflects the proportion of its variance explained by that component. Higher squared cosine values suggest effective representation by the principal components. In this case we can identify fair amount of well represented observations.
+:::
 
 ```{r}
 # PC1 <- fviz_contrib(pca, choice = "var", axes = 1)
@@ -154,6 +225,26 @@ fviz_contrib(pca, choice = "var", axes = 5)
 # gridExtra::grid.arrange(PC1, PC2, PC3, PC4, PC5, ncol = 3, nrow=2)
 
 ```
+
+::: {style="text-align: justify"}
+Final step of the analysis is to assess what exactly the components might represent based on the contributions of each variable towards it.
+
+The first PCA is created mostly based on life expectancy, schooling, thinness between 10 to 19 years old, income composition of resources, thinnes between 5 to 9 years old, BMI and adult mortality variables. It carries information about overall health status.
+
+The second PCA is based on infant deaths, under five deaths, population and measles (an illness that could be prevented with a vaccine that is more dangerous to children than to adults). It carries information about children health status.
+
+The third PCA consists of Hepatitis B, Diphtheria, Polio, percentage health expenditure and GDP variables. It carries information about health status (based on diseases that could be prevented by vaccines which pose a threat to adults as well as children) with connection to income and spending on healthcare.
+
+The fourth PCA is created based on HIV?AIDS, percentage health expenditure, GDP and adult mortality variables. It carries information about the influence of an illness that poses a threat to adults, which is not preventable by vaccines, with connection to income and spending on healthcare.
+
+The fifth PCA consists of total expenditure of government on health, HIV/AIDS, Alcohol, GDP and some other variables that appeared in previous PCAs.
+:::
+
+## Conclusion.
+
+::: {style="text-align: justify"}
+As the idea behind the PCA is to create new components that carry as much information as possible to reflect the original data set without inter-correlation of such components the results of this analysis are not as satisfactory as it was expected on the beginning. Some of the created PCAs are quite complex (especially the last one) and difficult to interpret. This might indicate, that variables for the entire data set of Life Expectancy based on the WHO studies were chosen correctly as each of them carry significant information.
+:::
 
 ## References.
 
