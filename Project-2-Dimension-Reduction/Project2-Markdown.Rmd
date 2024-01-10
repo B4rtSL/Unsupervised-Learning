@@ -78,7 +78,7 @@ Income Composition of Resources - Human Development Index in terms of income com
 Schooling - Number of years of Schooling (years)
 :::
 
-```{r echo=TRUE}
+```{r echo=FALSE}
 life = read.csv('Life-Expectancy-Data.csv')
 str(life)
 head(life)
@@ -229,13 +229,13 @@ fviz_contrib(pca, choice = "var", axes = 5)
 ::: {style="text-align: justify"}
 Final step of the analysis is to assess what exactly the components might represent based on the contributions of each variable towards it.
 
-The first PCA is created mostly based on life expectancy, schooling, thinness between 10 to 19 years old, income composition of resources, thinnes between 5 to 9 years old, BMI and adult mortality variables. It carries information about overall health status.
+The first PCA is created mostly based on life expectancy, schooling, thinness between 10 to 19 years old, income composition of resources, thinness between 5 to 9 years old, BMI and adult mortality variables. It carries information about overall health status.
 
 The second PCA is based on infant deaths, under five deaths, population and measles (an illness that could be prevented with a vaccine that is more dangerous to children than to adults). It carries information about children health status.
 
 The third PCA consists of Hepatitis B, Diphtheria, Polio, percentage health expenditure and GDP variables. It carries information about health status (based on diseases that could be prevented by vaccines which pose a threat to adults as well as children) with connection to income and spending on healthcare.
 
-The fourth PCA is created based on HIV?AIDS, percentage health expenditure, GDP and adult mortality variables. It carries information about the influence of an illness that poses a threat to adults, which is not preventable by vaccines, with connection to income and spending on healthcare.
+The fourth PCA is created based on HIV/AIDS, percentage health expenditure, GDP and adult mortality variables. It carries information about the influence of an illness that poses a threat to adults, which is not preventable by vaccines, with connection to income and spending on healthcare.
 
 The fifth PCA consists of total expenditure of government on health, HIV/AIDS, Alcohol, GDP and some other variables that appeared in previous PCAs.
 :::
