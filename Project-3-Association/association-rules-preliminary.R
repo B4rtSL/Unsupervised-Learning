@@ -46,6 +46,18 @@ summary(as.factor(data$Insomnia))
 data$OCD = ifelse(data$OCD < 4, "Not obsessive-compulsive", ifelse(data$OCD < 7, "Fairly obsessive-compulsive", ifelse(data$OCD < 11, "Obsessive-compulsive", NA)))
 summary(as.factor(data$OCD))
 
+### YES/NO Questions modification.
+
+data$While.working = ifelse(data$While.working == 'Yes', "Listening while working", ifelse(data$While.working == 'No', "Not listening while working", NA))
+
+data$Instrumentalist = ifelse(data$Instrumentalist == 'Yes', "Instrumentalist", ifelse(data$Instrumentalist == 'No', "Non-instrumentalist", NA))
+
+data$Composer = ifelse(data$Composer == 'Yes', "Composer", ifelse(data$Composer == 'No', "Non-composer", NA))
+
+data$Exploratory = ifelse(data$Exploratory == 'Yes', "Exploring", ifelse(data$Exploratory == 'No', "Non-exploring", NA))
+
+data$Foreign.languages = ifelse(data$Foreign.languages == 'Yes', "Polyglot", ifelse(data$Foreign.languages == 'No', "Non-polyglot", NA))
+
 # columns do not need further actions despite converting to factors
 str(data)
 data = data %>% mutate(across(all_of(colnames(data)), factor))
