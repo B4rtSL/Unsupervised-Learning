@@ -1,0 +1,190 @@
+---
+title: "Project3-Markdown"
+author: "Bartosz Slysz"
+date: "2024-01-12"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# **Music & Mental Health Survey - association rules mining.**
+
+The goal of this project is to determine the relations between favorite music genres, music listening habits and self-reported assessment of mental health of questionnaire attendees with the help of association rules mining methodology.
+
+The source of the data is: <https://www.kaggle.com/datasets/catherinerasgaitis/mxmh-survey-results>
+
+The concept of using the association rules mining on the survey result was derived from the lecture example of analysis of the general survey of happiness of inhabitants of the city of Sommerville.\
+I have briefly checked a few of the best notebooks under this Kaggle topic and after not finding association rules implementation have decided to explore this niche.
+
+## Data preparation.
+
+### Cleaning.
+
+```{r}
+library(tidyverse)
+
+data = read.csv('mxmh_survey_results.csv')
+str(data)
+```
+
+The data for further analysis has to be converted to the categorical data. Firstly, the columns time-stamp, primary streaming service, BPM and permissions are dropped as they will not be useful.
+
+```{r}
+columnsToDismiss = c(1, 3, 11, 33)
+data = data[, -columnsToDismiss]
+```
+
+```{r}
+summary(data)
+
+# removing rows with NA's (only one row without age)
+
+data = data[complete.cases(data),]
+```
+
+The data that could be divided into some meaningful category bins is subjectively converted into ones to allow for further rules mining. In terms of the age, I have designed bins grid to be quite tight due to data distribution into quartiles (vide above summary). For other variables the grid was designed to be simple.
+
+```{r}
+# columns with continuous data need introduction of categorical bins
+
+data$Age <- factor(ifelse(data$Age < 18, "Age < 18", 
+                      ifelse(data$Age <= 24, "Age 18-24",
+                      ifelse(data$Age <= 34, "Age 25-34",
+                      ifelse(data$Age <= 44, "Age 35-44",
+                      ifelse(data$Age <= 54, "Age 45-54",
+                      ifelse(data$Age <= 64, "Age 55-64",
+                      ifelse(data$Age >= 65, "Age 65+", NA))))))),
+                      levels = c("Age < 18", "Age 18-24", "Age 25-34", "Age 35-44", "Age 45-54", "Age 55-64", "Age 65+"))
+
+data$Hours.per.day <- factor(ifelse(data$Hours.per.day <= 2, 'hours <= 2',
+                            ifelse(data$Hours.per.day <= 4, '2 < hours <= 4',
+                            ifelse(data$Hours.per.day <= 6, '4 < hours <= 6',
+                            ifelse(data$Hours.per.day <= 24, '6+ hours', NA)))),
+                            levels = c('hours <= 2', '2 < hours <= 4', '4 < hours <= 6', '6+ hours'))
+
+data$Anxiety <- factor(ifelse(data$Anxiety < 4, "Not Anxious",
+                       ifelse(data$Anxiety < 7, "Fairly Anxious",
+                        ifelse(data$Anxiety < 11, "Anxious", NA))),
+                        levels = c("Not Anxious", "Fairly Anxious", "Anxious"))
+
+data$Depression <- factor(ifelse(data$Depression < 4, "Not Depressed",
+                          ifelse(data$Depression < 7, "Fairly Depressed",
+                          ifelse(data$Depression < 11, "Depressed", NA))),
+                          levels = c("Not Depressed", "Fairly Depressed", "Depressed"))
+
+data$Insomnia <- factor(ifelse(data$Insomnia < 4, "Not Insomniac",
+                        ifelse(data$Insomnia < 7, "Fairly Insomniac",
+                        ifelse(data$Insomnia < 11, "Insomniac", NA))),
+                        levels = c("Not Insomniac", "Fairly Insomniac", "Insomniac"))
+
+data$OCD <- factor(ifelse(data$OCD < 4, "Not O-C",
+                  ifelse(data$OCD < 7, "Fairly O-C",
+                  ifelse(data$OCD < 11, "O-C", NA))),
+                  levels = c("Not O-C", "Fairly O-C", "O-C"))
+```
+
+The data with the 'yes or no' answers, touching the matter of listener's habits, was also converted, so that in the case of displaying the values in the basket analysis it will be clearly interpretable.
+
+```{r}
+### YES/NO Questions modification.
+
+data$While.working = ifelse(data$While.working == 'Yes', "Listening while working", ifelse(data$While.working == 'No', "Not listening while working", NA))
+
+data$Instrumentalist = ifelse(data$Instrumentalist == 'Yes', "Instrumentalist", ifelse(data$Instrumentalist == 'No', "Non-instrumentalist", NA))
+
+data$Composer = ifelse(data$Composer == 'Yes', "Composer", ifelse(data$Composer == 'No', "Non-composer", NA))
+
+data$Exploratory = ifelse(data$Exploratory == 'Yes', "Exploring", ifelse(data$Exploratory == 'No', "Non-exploring", NA))
+
+data$Foreign.languages = ifelse(data$Foreign.languages == 'Yes', "Polyglot", ifelse(data$Foreign.languages == 'No', "Non-polyglot", NA))
+
+```
+
+Final choice of columns to analyze is based on listening habits, age and mental health status. All columns related to each genres frequency are omitted. Data, after cleaning and adjustment, is saved to 'middle file'.
+
+```{r}
+# columns do not need further actions despite conversion to factors
+data = data %>% mutate(across(all_of(colnames(data)), factor))
+
+dataHabitsHealth = data[, c(1:8, 25:28)]
+write.csv(dataHabitsHealth, file = 'cleanData.csv')
+```
+
+### Insights from statistics.
+
+#### Age and listening hours.
+
+The most popular age groups are generally young people, accordingly 18 to 24, below 18 and between 25 and 34 years old.
+
+```{r}
+library(arules)
+library(wesanderson)
+
+ggplot(dataHabitsHealth, aes(x = Age, fill = Age)) +
+  geom_bar() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1), legend.position = 'none') +
+  labs(title = "Frequency of age groups", y='', x='') +
+  scale_x_discrete(labels = levels(dataHabitsHealth$Age))+
+  scale_fill_manual(values = wes_palette(('BottleRocket2'),10,type=c('continuous')))
+```
+
+Almost half of surveyed people spend less than 2 hours per day on listening to music.
+
+```{r}
+
+ggplot(dataHabitsHealth, aes(x = Hours.per.day, fill=Hours.per.day))+
+  geom_bar() +
+  theme(axis.text.x = element_text(angle=45, hjust=1), legend.position = 'none') +
+  labs(title = "Frequency of listening hours groups", y='', x='') +
+  scale_x_discrete(labels = levels(dataHabitsHealth$Hours.per.day))+
+  scale_fill_manual(values = wes_palette(('BottleRocket2'),10,type=c('continuous')))
+  
+```
+
+#### Mental Health summary.
+
+Brief numeric summary of mental health self-assessment.
+
+```{r}
+summary(dataHabitsHealth$Anxiety)
+summary(dataHabitsHealth$Depression)
+summary(dataHabitsHealth$Insomnia)
+summary(dataHabitsHealth$OCD)
+```
+
+#### What are top 5 favorite genres?
+
+5 most popular music genres Rock (188), Pop (114), Metal (88), Classical (53) and video game music (44).
+
+```{r}
+table(dataHabitsHealth$Fav.genre)
+```
+
+## Association rules.
+
+```{r}
+transactions = read.transactions('cleanData.csv', format='basket', sep=',', skip=0)
+```
+
+```{r}
+basicRules = apriori(data = transactions, parameter=list(supp=0.5, conf=0.6))
+```
+
+```{r}
+inspect(sort(basicRules, by = "lift")[1:5], linebreak = FALSE)
+```
+
+```{r}
+library(arulesViz)
+set.seed(123) 
+plot(basicRules, method="graph", measure="support", shading="lift", main="Graph")
+```
+
+```{r}
+rulesDepressed = apriori(data=transactions, parameter=list(supp=0.1, conf=0.1), appearance=list(default="lhs", rhs="Depressed"), control=list(verbose=F)) 
+
+rulesDebressedSorted<-sort(rulesDepressed, by="confidence", decreasing=TRUE)
+inspect(head(rulesDebressedSorted))
+```
