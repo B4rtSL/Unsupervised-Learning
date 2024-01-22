@@ -18,33 +18,40 @@ data = data[complete.cases(data),]
 
 # columns with continuous data need introduction of categorical bins
 
-data$Age = ifelse(data$Age<18, "Age below 18", 
-                  ifelse(data$Age<=24, "Age 18-24",
-                         ifelse(data$Age<=34, "Age 25-34",
-                                ifelse(data$Age<=44, "Age 35-44",
-                                       ifelse(data$Age<=54, "Age 45-54",
-                                              ifelse(data$Age<=64, "Age 55-64",
-                                                     ifelse(data$Age>=65, "Age 65 or above", NA)))))))
-summary(as.factor(data$Age))
+data$Age <- factor(ifelse(data$Age < 18, "Age < 18", 
+                          ifelse(data$Age <= 24, "Age 18-24",
+                                 ifelse(data$Age <= 34, "Age 25-34",
+                                        ifelse(data$Age <= 44, "Age 35-44",
+                                               ifelse(data$Age <= 54, "Age 45-54",
+                                                      ifelse(data$Age <= 64, "Age 55-64",
+                                                             ifelse(data$Age >= 65, "Age 65+", NA))))))),
+                   levels = c("Age < 18", "Age 18-24", "Age 25-34", "Age 35-44", "Age 45-54", "Age 55-64", "Age 65+"))
 
-data$Hours.per.day = ifelse(data$Hours.per.day <= 2, '2 hours or less',
-                            ifelse(data$Hours.per.day <= 4, 'More than 2 hours, less than 4',
-                                   ifelse(data$Hours.per.day <= 6, 'More than 4 hours, less than 6',
-                                          ifelse(data$Hours.per.day <= 24, '6 hours +', NA))))
+data$Hours.per.day <- factor(ifelse(data$Hours.per.day <= 2, 'hours <= 2',
+                                    ifelse(data$Hours.per.day <= 4, '2 < hours <= 4',
+                                           ifelse(data$Hours.per.day <= 6, '4 < hours <= 6',
+                                                  ifelse(data$Hours.per.day <= 24, '6+ hours', NA)))),
+                             levels = c('hours <= 2', '2 < hours <= 4', '4 < hours <= 6', '6+ hours'))
 
-summary(as.factor(data$Hours.per.day))
+data$Anxiety <- factor(ifelse(data$Anxiety < 4, "Not Anxious",
+                              ifelse(data$Anxiety < 7, "Fairly Anxious",
+                                     ifelse(data$Anxiety < 11, "Anxious", NA))),
+                       levels = c("Not Anxious", "Fairly Anxious", "Anxious"))
 
-data$Anxiety = ifelse(data$Anxiety < 4, "Not Anxious", ifelse(data$Anxiety < 7, "Fairly Anxious", ifelse(data$Anxiety < 11, "Anxious", NA)))
-summary(as.factor(data$Anxiety))
+data$Depression <- factor(ifelse(data$Depression < 4, "Not Depressed",
+                                 ifelse(data$Depression < 7, "Fairly Depressed",
+                                        ifelse(data$Depression < 11, "Depressed", NA))),
+                          levels = c("Not Depressed", "Fairly Depressed", "Depressed"))
 
-data$Depression = ifelse(data$Depression < 4, "Not Depressed", ifelse(data$Depression < 7, "Fairly Depressed", ifelse(data$Depression < 11, "Depressed", NA)))
-summary(as.factor(data$Depression))
+data$Insomnia <- factor(ifelse(data$Insomnia < 4, "Not Insomniac",
+                               ifelse(data$Insomnia < 7, "Fairly Insomniac",
+                                      ifelse(data$Insomnia < 11, "Insomniac", NA))),
+                        levels = c("Not Insomniac", "Fairly Insomniac", "Insomniac"))
 
-data$Insomnia = ifelse(data$Insomnia < 4, "Not Insomniac", ifelse(data$Insomnia < 7, "Fairly Insomniac", ifelse(data$Insomnia < 11, "Insomniac", NA)))
-summary(as.factor(data$Insomnia))
-
-data$OCD = ifelse(data$OCD < 4, "Not obsessive-compulsive", ifelse(data$OCD < 7, "Fairly obsessive-compulsive", ifelse(data$OCD < 11, "Obsessive-compulsive", NA)))
-summary(as.factor(data$OCD))
+data$OCD <- factor(ifelse(data$OCD < 4, "Not O-C",
+                          ifelse(data$OCD < 7, "Fairly O-C",
+                                 ifelse(data$OCD < 11, "O-C", NA))),
+                   levels = c("Not O-C", "Fairly O-C", "O-C"))
 
 ### YES/NO Questions modification.
 
@@ -74,7 +81,7 @@ inspect(transactions)
 size(transactions) 
 length(transactions)
 
-rulesDepressed<-apriori(data=transactions, parameter=list(supp=0.01, conf=0.1), appearance=list(default="lhs", rhs="Depressed"), control=list(verbose=F)) 
+rulesDepressed<-apriori(data=transactions, parameter=list(supp=0.1, conf=0.1), appearance=list(default="lhs", rhs="Depressed"), control=list(verbose=F)) 
 
 rulesDebressedSorted<-sort(rulesDepressed, by="confidence", decreasing=TRUE)
 inspect(head(rulesDebressedSorted))
