@@ -98,7 +98,7 @@ data$Composer = ifelse(data$Composer == 'Yes', "Composer", ifelse(data$Composer 
 
 data$Exploratory = ifelse(data$Exploratory == 'Yes', "Exploring", ifelse(data$Exploratory == 'No', "Non-exploring", NA))
 
-data$Foreign.languages = ifelse(data$Foreign.languages == 'Yes', "Polyglot", ifelse(data$Foreign.languages == 'No', "Non-polyglot", NA))
+data$Foreign.languages = ifelse(data$Foreign.languages == 'Yes', "Not Fluent", ifelse(data$Foreign.languages == 'No', "Only fluent", NA))
 
 ```
 
@@ -168,23 +168,96 @@ table(dataHabitsHealth$Fav.genre)
 transactions = read.transactions('cleanData.csv', format='basket', sep=',', skip=0)
 ```
 
+Preliminary set of rules is set on very high levels of support and confidence
+
 ```{r}
-basicRules = apriori(data = transactions, parameter=list(supp=0.5, conf=0.6))
+basicRules = apriori(data = transactions, parameter=list(supp=0.55, conf=0.6))
 ```
+
+The results for such levels of support and confidence are either trivial (non-instrumentalist =\> non-composer) or not meaningful, which was not a surprise, as high level of support indicates very high frequency of appearance in the data set.
 
 ```{r}
 inspect(sort(basicRules, by = "lift")[1:5], linebreak = FALSE)
 ```
 
+### Anxiety as antecedent.
+
+Considering the fact that anxiety is the most popular mental health issue in the data set I have decided to try whether some meaningful rules would be possible to acquire. The results are not a surprise, the rule with the highest lift value indicates that anxiety is antecedent to depression (which for experts in the field might seem as a trivial relation). 27% of people who struggle with anxiety are listening to music in the languages that they are not fluent in, which might indicate that they are more focused on the instrumental layer than lyrics, and almost 23% of people who struggle with anxiety are people in the age between 18 and 24.
+
+```{r}
+rulesAnxious = apriori(data=transactions, parameter=list(supp=0.05, conf=0.35, minlen=2), appearance=list(default="rhs", lhs="Anxious"), control=list(verbose=F)) 
+```
+
+```{r}
+rulesAnxiousSorted = sort(rulesAnxious, by="lift", decreasing=TRUE)
+inspect(head(rulesAnxiousSorted))
+```
+
 ```{r}
 library(arulesViz)
 set.seed(123) 
-plot(basicRules, method="graph", measure="support", shading="lift", main="Graph")
+
+plot(rulesAnxious, method="graph", measure="support", shading="lift", main="Graph for anxiety")
+```
+
+### Depression as consequent.
+
+There is no surprise in the results, that anxiety is always an antecedent to depression. There seems to be a positive relation between exploring for new artists/genres and depression which might indicate searching for new stimuli. There also is a positive relation, due to above 1 lift values, between listening to music while working and depression.
+
+```{r}
+rulesDepressed = apriori(data=transactions, parameter=list(supp=0.15, conf=0.5, minlen=2), appearance=list(default="lhs", rhs="Depressed"), control=list(verbose=F)) 
+
+rulesDepressedSorted = sort(rulesDepressed, by="lift", decreasing=TRUE)
+inspect(head(rulesDepressedSorted))
 ```
 
 ```{r}
-rulesDepressed = apriori(data=transactions, parameter=list(supp=0.1, conf=0.1), appearance=list(default="lhs", rhs="Depressed"), control=list(verbose=F)) 
-
-rulesDebressedSorted<-sort(rulesDepressed, by="confidence", decreasing=TRUE)
-inspect(head(rulesDebressedSorted))
+set.seed(123) 
+plot(rulesDepressed, method="graph", measure="support", shading="lift", main="Graph for depression")
 ```
+
+### Rock music as antecedent. 
+
+Respondents whose favorite music genre is rock are likely to be listening to songs in the languages that they are fluent in. They are also likely to feel anxiety and depression while also being not open towards exploring new genres/artists.
+
+```{r}
+rulesRock = apriori(data=transactions, parameter=list(supp=0.01, conf=0.3, minlen=2), appearance=list(default="rhs", lhs="Rock"), control=list(verbose=F)) 
+
+rulesRockSorted = sort(rulesRock, by="lift", decreasing=TRUE)
+inspect(head(rulesRockSorted))
+```
+
+```{r}
+set.seed(123) 
+plot(rulesRock, method="graph", measure="support", shading="lift", main="Graph for rock music")
+```
+
+### Classical music as consequent.
+
+According to the result there is a high possibility that people that are listening to classical music, are in quite good mental condition, antecedents for classical music are statuses like Not Anxious, Not Depressed, Not Insomniac, Not O-C. What also is worth noticing is that classical music listeners are rather not exploring for new genres or artists. Obviously, they are also very likely to be playing instruments.
+
+```{r}
+rulesClassical = apriori(data=transactions, parameter=list(supp=0.01, conf=0.3, minlen=2), appearance=list(default="lhs", rhs="Classical"), control=list(verbose=F)) 
+
+rulesClassicalSorted = sort(rulesClassical, by="lift", decreasing=TRUE)
+inspect(head(rulesClassicalSorted))
+```
+
+```{r}
+set.seed(123) 
+plot(rulesClassical, method="graph", measure="support", shading="lift", main="Graph for classical music")
+```
+
+## Conclusions.
+
+The association rules allow for finding some behavioral relations. I believe that their usage for mining survey results could be very effective in establishing insightful relationships in the respondents answers. Possible ways to further expand this research might be trying to find existing relations for other music genres, listening habits and mental health conditions.
+
+## References.
+
+Data:
+
+<https://www.kaggle.com/datasets/catherinerasgaitis/mxmh-survey-results/data>
+
+Explanation of lift:
+
+<https://www.ibm.com/docs/en/db2/10.1.0?topic=associations-lift-in-association-rule>
