@@ -2,7 +2,9 @@
 title: "Project3-Markdown"
 author: "Bartosz Slysz"
 date: "2024-01-12"
-output: html_document
+output:
+  html_document: default
+  pdf_document: default
 ---
 
 ```{r setup, include=FALSE}
@@ -11,12 +13,36 @@ knitr::opts_chunk$set(echo = TRUE)
 
 # **Music & Mental Health Survey - association rules mining.**
 
+::: {style="text-align: justify"}
 The goal of this project is to determine the relations between favorite music genres, music listening habits and self-reported assessment of mental health of questionnaire attendees with the help of association rules mining methodology.
 
 The source of the data is: <https://www.kaggle.com/datasets/catherinerasgaitis/mxmh-survey-results>
 
 The concept of using the association rules mining on the survey result was derived from the lecture example of analysis of the general survey of happiness of inhabitants of the city of Sommerville.\
 I have briefly checked a few of the best notebooks under this Kaggle topic and after not finding association rules implementation have decided to explore this niche.
+:::
+
+## Measures to be used.
+
+### Support.
+
+::: {style="text-align: justify"}
+The support of an association rule is determined by the proportion of groups containing all items specified in the rule. This percentage is calculated based on the total number of considered groups, indicating the frequency with which both the rule body (antecedent) and rule head (consequent) appear together among all considered groups.
+:::
+
+### Confidence.
+
+::: {style="text-align: justify"}
+The confidence of an association rule is expressed as a percentage, reflecting the frequency with which the rule head appears in groups that also contain the rule body. This confidence value serves as a measure of the rule's reliability. A higher confidence value indicates a greater likelihood of the head items appearing in a group when it is known that all the body items are present in that group.
+:::
+
+### Lift.
+
+::: {style="text-align: justify"}
+The lift value allows to quantify importance of a rule. It is determined by the ratio of the rule's confidence to its expected confidence. The expected confidence is calculated by dividing the product of the support values for the rule body and rule head by the support of the rule body.
+
+A lift value above 1 implies a positive association, indicating that the rule body and rule head occur more frequently together than expected. A lift below 1 suggests a negative association, meaning the rule body and rule head appear less often together than expected. A lift around 1 signifies a neutral association, with the occurrences aligning closely to expectations.
+:::
 
 ## Data preparation.
 
@@ -29,7 +55,9 @@ data = read.csv('mxmh_survey_results.csv')
 str(data)
 ```
 
+::: {style="text-align: justify"}
 The data for further analysis has to be converted to the categorical data. Firstly, the columns time-stamp, primary streaming service, BPM and permissions are dropped as they will not be useful.
+:::
 
 ```{r}
 columnsToDismiss = c(1, 3, 11, 33)
@@ -44,7 +72,9 @@ summary(data)
 data = data[complete.cases(data),]
 ```
 
+::: {style="text-align: justify"}
 The data that could be divided into some meaningful category bins is subjectively converted into ones to allow for further rules mining. In terms of the age, I have designed bins grid to be quite tight due to data distribution into quartiles (vide above summary). For other variables the grid was designed to be simple.
+:::
 
 ```{r}
 # columns with continuous data need introduction of categorical bins
@@ -85,7 +115,9 @@ data$OCD <- factor(ifelse(data$OCD < 4, "Not O-C",
                   levels = c("Not O-C", "Fairly O-C", "O-C"))
 ```
 
+::: {style="text-align: justify"}
 The data with the 'yes or no' answers, touching the matter of listener's habits, was also converted, so that in the case of displaying the values in the basket analysis it will be clearly interpretable.
+:::
 
 ```{r}
 ### YES/NO Questions modification.
@@ -102,7 +134,9 @@ data$Foreign.languages = ifelse(data$Foreign.languages == 'Yes', "Not Fluent", i
 
 ```
 
+::: {style="text-align: justify"}
 Final choice of columns to analyze is based on listening habits, age and mental health status. All columns related to each genres frequency are omitted. Data, after cleaning and adjustment, is saved to 'middle file'.
+:::
 
 ```{r}
 # columns do not need further actions despite conversion to factors
@@ -116,7 +150,9 @@ write.csv(dataHabitsHealth, file = 'cleanData.csv')
 
 #### Age and listening hours.
 
+::: {style="text-align: justify"}
 The most popular age groups are generally young people, accordingly 18 to 24, below 18 and between 25 and 34 years old.
+:::
 
 ```{r}
 library(arules)
@@ -130,7 +166,9 @@ ggplot(dataHabitsHealth, aes(x = Age, fill = Age)) +
   scale_fill_manual(values = wes_palette(('BottleRocket2'),10,type=c('continuous')))
 ```
 
+::: {style="text-align: justify"}
 Almost half of surveyed people spend less than 2 hours per day on listening to music.
+:::
 
 ```{r}
 
@@ -145,7 +183,9 @@ ggplot(dataHabitsHealth, aes(x = Hours.per.day, fill=Hours.per.day))+
 
 #### Mental Health summary.
 
+::: {style="text-align: justify"}
 Brief numeric summary of mental health self-assessment.
+:::
 
 ```{r}
 summary(dataHabitsHealth$Anxiety)
@@ -174,7 +214,9 @@ Preliminary set of rules is set on very high levels of support and confidence
 basicRules = apriori(data = transactions, parameter=list(supp=0.55, conf=0.6))
 ```
 
+::: {style="text-align: justify"}
 The results for such levels of support and confidence are either trivial (non-instrumentalist =\> non-composer) or not meaningful, which was not a surprise, as high level of support indicates very high frequency of appearance in the data set.
+:::
 
 ```{r}
 inspect(sort(basicRules, by = "lift")[1:5], linebreak = FALSE)
@@ -182,7 +224,9 @@ inspect(sort(basicRules, by = "lift")[1:5], linebreak = FALSE)
 
 ### Anxiety as antecedent.
 
+::: {style="text-align: justify"}
 Considering the fact that anxiety is the most popular mental health issue in the data set I have decided to try whether some meaningful rules would be possible to acquire. The results are not a surprise, the rule with the highest lift value indicates that anxiety is antecedent to depression (which for experts in the field might seem as a trivial relation). 27% of people who struggle with anxiety are listening to music in the languages that they are not fluent in, which might indicate that they are more focused on the instrumental layer than lyrics, and almost 23% of people who struggle with anxiety are people in the age between 18 and 24.
+:::
 
 ```{r}
 rulesAnxious = apriori(data=transactions, parameter=list(supp=0.05, conf=0.35, minlen=2), appearance=list(default="rhs", lhs="Anxious"), control=list(verbose=F)) 
@@ -202,7 +246,9 @@ plot(rulesAnxious, method="graph", measure="support", shading="lift", main="Grap
 
 ### Depression as consequent.
 
+::: {style="text-align: justify"}
 There is no surprise in the results, that anxiety is always an antecedent to depression. There seems to be a positive relation between exploring for new artists/genres and depression which might indicate searching for new stimuli. There also is a positive relation, due to above 1 lift values, between listening to music while working and depression.
+:::
 
 ```{r}
 rulesDepressed = apriori(data=transactions, parameter=list(supp=0.15, conf=0.5, minlen=2), appearance=list(default="lhs", rhs="Depressed"), control=list(verbose=F)) 
@@ -216,9 +262,11 @@ set.seed(123)
 plot(rulesDepressed, method="graph", measure="support", shading="lift", main="Graph for depression")
 ```
 
-### Rock music as antecedent. 
+### Rock music as antecedent.
 
+::: {style="text-align: justify"}
 Respondents whose favorite music genre is rock are likely to be listening to songs in the languages that they are fluent in. They are also likely to feel anxiety and depression while also being not open towards exploring new genres/artists.
+:::
 
 ```{r}
 rulesRock = apriori(data=transactions, parameter=list(supp=0.01, conf=0.3, minlen=2), appearance=list(default="rhs", lhs="Rock"), control=list(verbose=F)) 
@@ -234,7 +282,9 @@ plot(rulesRock, method="graph", measure="support", shading="lift", main="Graph f
 
 ### Classical music as consequent.
 
+::: {style="text-align: justify"}
 According to the result there is a high possibility that people that are listening to classical music, are in quite good mental condition, antecedents for classical music are statuses like Not Anxious, Not Depressed, Not Insomniac, Not O-C. What also is worth noticing is that classical music listeners are rather not exploring for new genres or artists. Obviously, they are also very likely to be playing instruments.
+:::
 
 ```{r}
 rulesClassical = apriori(data=transactions, parameter=list(supp=0.01, conf=0.3, minlen=2), appearance=list(default="lhs", rhs="Classical"), control=list(verbose=F)) 
@@ -250,13 +300,23 @@ plot(rulesClassical, method="graph", measure="support", shading="lift", main="Gr
 
 ## Conclusions.
 
+::: {style="text-align: justify"}
 The association rules allow for finding some behavioral relations. I believe that their usage for mining survey results could be very effective in establishing insightful relationships in the respondents answers. Possible ways to further expand this research might be trying to find existing relations for other music genres, listening habits and mental health conditions.
+:::
 
 ## References.
 
 Data:
 
 <https://www.kaggle.com/datasets/catherinerasgaitis/mxmh-survey-results/data>
+
+Explanation of support:
+
+<https://www.ibm.com/docs/en/db2/10.1.0?topic=associations-support-in-association-rule>
+
+Explanation of confidence:
+
+<https://www.ibm.com/docs/en/db2/10.1.0?topic=associations-confidence-in-association-rule>
 
 Explanation of lift:
 
